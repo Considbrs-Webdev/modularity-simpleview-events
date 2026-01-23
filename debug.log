@@ -1,0 +1,129 @@
+=== MAIN QUERY ===
+Array
+(
+    [timestamp] => 2026-01-23 10:14:47
+    [is_tax] => 1
+    [queried_object] => WP_Term Object
+        (
+            [term_id] => 13
+            [name] => Kulturskola
+            [slug] => kulturskola
+            [term_group] => 0
+            [term_taxonomy_id] => 13
+            [taxonomy] => sv_event_category
+            [description] => 
+            [parent] => 0
+            [count] => 1
+            [filter] => raw
+        )
+
+    [tax_query] => 
+    [post_type] => 
+    [query_vars] => Array
+        (
+            [sv_event_category] => kulturskola
+            [error] => 
+            [m] => 
+            [p] => 0
+            [post_parent] => 0
+            [subpost] => 
+            [subpost_id] => 
+            [attachment] => 
+            [attachment_id] => 0
+            [name] => 
+            [pagename] => 
+            [page_id] => 0
+            [second] => 
+            [minute] => 
+            [hour] => 
+            [day] => 0
+            [monthnum] => 0
+            [year] => 0
+            [w] => 0
+            [category_name] => 
+            [tag] => 
+            [cat] => 
+            [tag_id] => 
+            [author] => 
+            [author_name] => 
+            [feed] => 
+            [tb] => 
+            [paged] => 0
+            [meta_key] => 
+            [meta_value] => 
+            [preview] => 
+            [s] => 
+            [sentence] => 
+            [title] => 
+            [fields] => 
+            [menu_order] => 
+            [embed] => 
+            [category__in] => Array
+                (
+                )
+
+            [category__not_in] => Array
+                (
+                )
+
+            [category__and] => Array
+                (
+                )
+
+            [post__in] => Array
+                (
+                )
+
+            [post__not_in] => Array
+                (
+                )
+
+            [post_name__in] => Array
+                (
+                )
+
+            [tag__in] => Array
+                (
+                )
+
+            [tag__not_in] => Array
+                (
+                )
+
+            [tag__and] => Array
+                (
+                )
+
+            [tag_slug__in] => Array
+                (
+                )
+
+            [tag_slug__and] => Array
+                (
+                )
+
+            [post_parent__in] => Array
+                (
+                )
+
+            [post_parent__not_in] => Array
+                (
+                )
+
+            [author__in] => Array
+                (
+                )
+
+            [author__not_in] => Array
+                (
+                )
+
+            [search_columns] => Array
+                (
+                )
+
+        )
+
+)
+
+

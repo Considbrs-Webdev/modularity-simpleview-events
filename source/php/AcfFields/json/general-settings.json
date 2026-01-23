@@ -1,0 +1,152 @@
+[{
+    "key": "group_simpleview_events_general_settings",
+    "title": "Simpleview Events Settings",
+    "fields": [
+        {
+            "key": "field_simpleview_events_display_name",
+            "label": "Display Name",
+            "name": "display_name",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "The name shown on the frontend (archive title, breadcrumbs). Leave empty to use the default 'Simpleview Events'.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "Simpleview Events",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_simpleview_events_slug",
+            "label": "Slug",
+            "name": "slug",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "The URL slug for the archive and posts. Auto-generated from Display Name, but can be customized. Don't forget to flush permalinks after changing (Settings > Permalinks > Save).",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "simpleview-event",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_simpleview_events_api_base_url",
+            "label": "API Base URL",
+            "name": "api_base_url",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "The base URL for the Simpleview API endpoint.",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "https://api.simpleview.com"
+        },
+        {
+            "key": "field_simpleview_events_api_key",
+            "label": "API Key",
+            "name": "api_key",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "The API key for authenticating with Simpleview API.",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": ""
+        },
+        {
+            "key": "field_simpleview_events_sync_frequency",
+            "label": "Sync Frequency",
+            "name": "sync_frequency",
+            "aria-label": "",
+            "type": "select",
+            "instructions": "How often to automatically sync events from Simpleview API.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "hourly": "Hourly",
+                "twicedaily": "Twice Daily",
+                "daily": "Daily"
+            },
+            "default_value": "daily",
+            "allow_null": 0,
+            "multiple": 0,
+            "ui": 0,
+            "return_format": "value",
+            "ajax": 0,
+            "placeholder": ""
+        },
+        {
+            "key": "field_simpleview_events_manual_sync",
+            "label": "Manual Sync",
+            "name": "manual_sync",
+            "aria-label": "",
+            "type": "message",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "<button type=\"button\" id=\"simpleview-events-manual-sync\" class=\"button button-primary\">Sync Now</button>",
+            "new_lines": "wpautop",
+            "esc_html": 0
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "simpleview-events-settings"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "acfe_autosync": [
+        "json"
+    ],
+    "acfe_form": 0,
+    "acfe_meta": "",
+    "acfe_note": ""
+}]
