@@ -2,9 +2,11 @@
 
 namespace ModularitySimpleviewEvents;
 
-use ModularitySimpleviewEvents\PostType\SimpleviewEvent;
 use ModularitySimpleviewEvents\Admin\Settings;
 use ModularitySimpleviewEvents\Cron\SyncScheduler;
+use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
+use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
+use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
 
 /**
  * Class App
@@ -21,275 +23,163 @@ class App
         // Initialize settings page
         new Settings();
 
-        // Initialize custom post type
-        new SimpleviewEvent();
-
         // Initialize cron scheduler
         new SyncScheduler();
 
-        // Fix taxonomy archive queries - set post type for sv_event_category taxonomy
-        add_action('pre_get_posts', [$this, 'setPostTypeForTaxonomyArchive']);
+        // Register archived post status on init
+        add_action('init', [$this, 'registerArchivedPostStatus'], 10);
 
-        // Fix the tax_query operator for our hierarchical taxonomy
-        add_action('pre_get_posts', [$this, 'fixTaxQueryOperator'], 5);
+        // Register dynamic post types and taxonomies on init (they're created during sync)
+        // Must be registered on every init to appear in admin menu
+        add_action('init', [$this, 'registerDynamicPostTypes'], 20);
+        add_action('init', [$this, 'registerDynamicTaxonomies'], 21);
+    }
+
+    /**
+     * Register the archived post status
+     * 
+     * @return void
+     */
+    public function registerArchivedPostStatus(): void
+    {
+        $archivedStatus = new ArchivedPostStatus();
+        $archivedStatus->register();
+    }
+
+    /**
+     * Register dynamic post types that were created during sync
+     * 
+     * This ensures post types are available even if sync hasn't run yet.
+     * Post types MUST be registered on every init hook to appear in admin menu.
+     * 
+     * @return void
+     */
+    public function registerDynamicPostTypes(): void
+    {
+        $postTypeManager = new DynamicPostTypeManager();
+        $optionKey = 'simpleview_events_registered_post_types';
+        $optionValue = get_option($optionKey, 'NOT_FOUND');
+        $registered = is_array($optionValue) ? $optionValue : [];
+
+        if (empty($registered)) {
+            // Try to flush options cache and re-read
+            wp_cache_delete($optionKey, 'options');
+            $registered = get_option($optionKey, []);
+            
+            // Fallback: If option is still empty, discover post types from existing posts
+            if (empty($registered)) {
+                $registered = $this->discoverPostTypesFromDatabase();
+                
+                // Save discovered post types to option
+                if (!empty($registered)) {
+                    update_option($optionKey, $registered);
+                }
+            }
+        }
+
+        foreach ($registered as $postTypeSlug => $info) {
+            // Always register on init - WordPress handles duplicates gracefully
+            // Post types must be registered on every page load to appear in admin menu
+            $postTypeManager->registerPostTypeForMediaChannel(
+                $info['name'] ?? '',
+                $info['id'] ?? ''
+            );
+        }
+    }
+
+    /**
+     * Register dynamic taxonomies that were created during sync
+     * 
+     * Taxonomies must be registered on every init hook to appear in admin.
+     * 
+     * @return void
+     */
+    public function registerDynamicTaxonomies(): void
+    {
+        $taxonomyManager = new DynamicTaxonomyManager();
+        $registered = get_option('simpleview_events_registered_post_types', []);
+
+        foreach ($registered as $postTypeSlug => $info) {
+            // Always register taxonomy - WordPress handles duplicates gracefully
+            $taxonomyManager->registerCategoryTaxonomyForPostType(
+                $postTypeSlug,
+                $info['name'] ?? ''
+            );
+        }
+    }
+
+    /**
+     * Discover post types from existing posts in database
+     * 
+     * Fallback method when option is empty - finds post types that start with 'sv_'
+     * and have posts, then reconstructs the option data from post meta
+     * 
+     * @return array Array of post type data in same format as option
+     */
+    private function discoverPostTypesFromDatabase(): array
+    {
+        global $wpdb;
         
-        // Fix tax_query structure when filtering on taxonomy archives
-        add_action('pre_get_posts', [$this, 'fixTaxQueryForFiltering'], 6);
-
-        // Enable taxonomy filtering on taxonomy archive pages
-        add_filter('Municipio/Archive/getTaxonomyFilters/taxonomies', [$this, 'enableTaxonomyFilteringOnTaxonomyArchives'], 10, 2);
-        add_filter('get_terms', [$this, 'filterTermsToChildrenOnly'], 10, 4);
-    }
-
-    /**
-     * Set the correct post type for sv_event_category taxonomy archives.
-     * 
-     * WordPress doesn't automatically associate taxonomy archives with their
-     * registered post type, so we need to explicitly set it.
-     * 
-     * @param \WP_Query $query The WP_Query instance
-     * @return void
-     */
-    public function setPostTypeForTaxonomyArchive(\WP_Query $query): void
-    {
-        // Only modify main frontend queries for our taxonomy
-        if (is_admin() || !$query->is_main_query()) {
-            return;
+        // Find all post types that start with 'sv_' and have posts
+        $postTypes = $wpdb->get_col($wpdb->prepare(
+            "SELECT DISTINCT post_type FROM {$wpdb->posts} 
+            WHERE post_type LIKE %s 
+            AND post_status != 'trash'
+            LIMIT 20",
+            'sv_%'
+        ));
+        
+        if (empty($postTypes)) {
+            return [];
         }
-
-        // Check if this is a sv_event_category taxonomy archive
-        if (!$query->is_tax('sv_event_category')) {
-            return;
-        }
-
-        // Set the post type to our custom post type
-        $query->set('post_type', 'simpleview_event');
-    }
-
-    /**
-     * Fix the tax_query operator for sv_event_category taxonomy.
-     * 
-     * Municipio's ApplyTaxQuery doesn't recognize our taxonomy as hierarchical,
-     * so it uses 'AND' operator which requires posts to have ALL terms.
-     * We need 'IN' operator to match posts with ANY of the terms.
-     *
-     * @param \WP_Query $query
-     * @return void
-     */
-    public function fixTaxQueryOperator(\WP_Query $query): void
-    {
-        if (is_admin()) {
-            return;
-        }
-
-        $taxQuery = $query->get('tax_query');
-        if (empty($taxQuery) || !is_array($taxQuery)) {
-            return;
-        }
-
-        $modified = false;
-        foreach ($taxQuery as $key => $clause) {
-            if (!is_array($clause)) {
-                continue;
-            }
-
-            // Check if this is our taxonomy with AND operator
-            if (
-                isset($clause['taxonomy']) &&
-                $clause['taxonomy'] === 'sv_event_category' &&
-                isset($clause['operator']) &&
-                $clause['operator'] === 'AND'
-            ) {
-                $taxQuery[$key]['operator'] = 'IN';
-                $modified = true;
-            }
-        }
-
-        if ($modified) {
-            $query->set('tax_query', $taxQuery);
-        }
-    }
-
-    /**
-     * Fix tax_query structure when filtering on taxonomy archives.
-     * 
-     * When filtering on a taxonomy archive, Municipio combines the archive term
-     * and filtered terms in a single clause with operator "IN", which matches
-     * posts with ANY term. We need to split them into separate clauses so posts
-     * must match BOTH the archive term AND the filtered term.
-     *
-     * @param \WP_Query $query
-     * @return void
-     */
-    public function fixTaxQueryForFiltering(\WP_Query $query): void
-    {
-        if (is_admin()) {
-            return;
-        }
-
-        // Only process on taxonomy archive pages
-        if (!is_tax('sv_event_category')) {
-            return;
-        }
-
-        $taxQuery = $query->get('tax_query');
-        if (empty($taxQuery) || !is_array($taxQuery)) {
-            return;
-        }
-
-        // Get current archive term
-        $currentTerm = get_queried_object();
-        if (!($currentTerm instanceof \WP_Term) || $currentTerm->taxonomy !== 'sv_event_category') {
-            return;
-        }
-
-        // Check if there are filter parameters for our taxonomy
-        $filterParam = 'archive_sv_event_category';
-        $hasFilterParams = !empty($_GET[$filterParam]) && is_array($_GET[$filterParam]) && !empty(array_filter($_GET[$filterParam]));
-
-        if (!$hasFilterParams) {
-            return;
-        }
-
-        // Find the sv_event_category clause
-        foreach ($taxQuery as $key => $clause) {
-            if (!is_array($clause)) {
-                continue;
-            }
-
-            if (
-                isset($clause['taxonomy']) &&
-                $clause['taxonomy'] === 'sv_event_category' &&
-                isset($clause['terms']) &&
-                is_array($clause['terms']) &&
-                count($clause['terms']) > 1
-            ) {
-                // Check if current term is in the terms array
-                $currentTermInTerms = in_array($currentTerm->term_id, $clause['terms'], true);
+        
+        $discovered = [];
+        
+        foreach ($postTypes as $postTypeSlug) {
+            // Try to find a post with this post type that has simpleview_id meta
+            $postId = $wpdb->get_var($wpdb->prepare(
+                "SELECT p.ID FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+                WHERE p.post_type = %s
+                AND pm.meta_key = 'simpleview_id'
+                AND p.post_status != 'trash'
+                LIMIT 1",
+                $postTypeSlug
+            ));
+            
+            if ($postId) {
+                // Get mediaChannel info from post meta (stored during sync)
+                $mediaChannelName = get_post_meta($postId, 'simpleview_media_channel_name', true);
+                $mediaChannelId = get_post_meta($postId, 'simpleview_media_channel_id', true);
                 
-                if ($currentTermInTerms) {
-                    // Split into two clauses: one for archive term, one for filtered terms
-                    $filteredTerms = array_filter($clause['terms'], fn($termId) => $termId !== $currentTerm->term_id);
-                    
-                    if (!empty($filteredTerms)) {
-                        // Remove the original clause
-                        unset($taxQuery[$key]);
-                        
-                        // Add two separate clauses with AND relation
-                        $taxQuery[] = [
-                            'taxonomy' => 'sv_event_category',
-                            'field' => 'term_id',
-                            'terms' => [$currentTerm->term_id],
-                            'operator' => 'IN',
-                        ];
-                        
-                        $taxQuery[] = [
-                            'taxonomy' => 'sv_event_category',
-                            'field' => 'term_id',
-                            'terms' => array_values($filteredTerms),
-                            'operator' => 'IN',
-                        ];
-                        
-                        // Ensure relation is AND
-                        if (!isset($taxQuery['relation']) || $taxQuery['relation'] !== 'AND') {
-                            $taxQuery['relation'] = 'AND';
-                        }
-                        
-                        // Re-index array keys (keep relation first)
-                        $relation = $taxQuery['relation'] ?? 'AND';
-                        unset($taxQuery['relation']);
-                        $taxQuery = array_merge(['relation' => $relation], array_values($taxQuery));
-                        
-                        $query->set('tax_query', $taxQuery);
-                    }
+                // Fallback: reconstruct name from post type slug if meta not found
+                if (empty($mediaChannelName)) {
+                    $mediaChannelName = str_replace('sv_', '', $postTypeSlug);
+                    $mediaChannelName = str_replace('_', ' ', $mediaChannelName);
+                    $mediaChannelName = ucwords($mediaChannelName);
                 }
                 
-                break;
+                $discovered[$postTypeSlug] = [
+                    'name' => $mediaChannelName,
+                    'id' => $mediaChannelId ?: 'discovered',
+                    'registered_at' => current_time('mysql'),
+                ];
             }
         }
+        
+        return $discovered;
     }
 
     /**
-     * Enable taxonomy filtering on taxonomy archive pages.
+     * Handle plugin deactivation
      * 
-     * Re-adds the current taxonomy to the enabled filters list so that
-     * child terms can be filtered on taxonomy archive pages.
+     * Note: We don't delete posts or terms, just clean up tracking
      * 
-     * @param array $taxonomies The list of taxonomy names
-     * @param string|null $currentTaxonomy The current taxonomy being viewed
-     * @return array
+     * @return void
      */
-    public function enableTaxonomyFilteringOnTaxonomyArchives(array $taxonomies, ?string $currentTaxonomy): array
+    public function onDeactivation(): void
     {
-        // Only process on sv_event_category taxonomy archives
-        if ($currentTaxonomy !== 'sv_event_category') {
-            return $taxonomies;
-        }
-
-        // Re-add the current taxonomy to enable filtering by child terms
-        if (!in_array('sv_event_category', $taxonomies, true)) {
-            $taxonomies[] = 'sv_event_category';
-        }
-
-        return $taxonomies;
-    }
-
-    /**
-     * Filter terms to only show child terms of the current term on taxonomy archives.
-     * 
-     * When building taxonomy filters on a taxonomy archive page, only show
-     * child terms of the current term, not all terms in the taxonomy.
-     * 
-     * @param array|\WP_Error $terms The terms array
-     * @param array $taxonomies The taxonomies being queried
-     * @param array $args The get_terms arguments
-     * @param \WP_Term_Query $term_query The term query object
-     * @return array|\WP_Error
-     */
-    public function filterTermsToChildrenOnly($terms, array $taxonomies, array $args, \WP_Term_Query $term_query)
-    {
-        // Return early if terms is an error
-        if (is_wp_error($terms)) {
-            return $terms;
-        }
-
-        // Only process on frontend, not admin
-        if (is_admin()) {
-            return $terms;
-        }
-
-        // Only process if we're querying sv_event_category
-        if (!in_array('sv_event_category', $taxonomies, true)) {
-            return $terms;
-        }
-
-        // Only process on taxonomy archive pages
-        if (!is_tax('sv_event_category')) {
-            return $terms;
-        }
-
-        // Get the current term
-        $currentTerm = get_queried_object();
-        if (!($currentTerm instanceof \WP_Term) || $currentTerm->taxonomy !== 'sv_event_category') {
-            return $terms;
-        }
-
-        // If current term has no parent (it's a top-level term), filter to only show its children
-        if ($currentTerm->parent === 0) {
-            // Filter terms to only include direct children of the current term
-            $filteredTerms = array_filter($terms, function($term) use ($currentTerm) {
-                if (!($term instanceof \WP_Term)) {
-                    return false;
-                }
-                // Only include direct children (parent matches current term ID)
-                return $term->parent === $currentTerm->term_id;
-            });
-
-            return array_values($filteredTerms);
-        }
-
-        // If current term is a child, we could show siblings, but for now just return all
-        // (This could be customized based on requirements)
-        return $terms;
+        // Optionally clean up registered post types tracking
+        // We keep it so post types can be re-registered on reactivation
     }
 }

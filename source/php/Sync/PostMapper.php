@@ -2,6 +2,9 @@
 
 namespace ModularitySimpleviewEvents\Sync;
 
+use ModularitySimpleviewEvents\Sync\TaxonomyMapper;
+use ModularitySimpleviewEvents\Sync\PostArchiver;
+
 /**
  * Class PostMapper
  * 
@@ -11,43 +14,69 @@ namespace ModularitySimpleviewEvents\Sync;
  */
 class PostMapper
 {
+    private TaxonomyMapper $taxonomyMapper;
+    private PostArchiver $postArchiver;
+
+    public function __construct(?TaxonomyMapper $taxonomyMapper = null, ?PostArchiver $postArchiver = null)
+    {
+        $this->taxonomyMapper = $taxonomyMapper ?? new TaxonomyMapper();
+        $this->postArchiver = $postArchiver ?? new PostArchiver();
+    }
+
     /**
      * Map API event data to WordPress post array
      * 
-     * This is a placeholder method. The actual mapping logic
-     * will be implemented once the API data structure is provided.
-     * 
      * @param array $eventData Single event data from API
-     * @param array $departments Array of department term IDs mapped by department identifier
-     * @param array $categories Array of category term IDs mapped by category identifier
+     * @param string $postTypeSlug The post type slug to use
      * @return array WordPress post array ready for wp_insert_post or wp_update_post
      */
-    public function mapToPost(array $eventData, array $departments, array $categories): array
+    public function mapToPost(array $eventData, string $postTypeSlug): array
     {
-        // TODO: Map actual API fields once structure is known
-        // Example structure (to be updated):
-        // $post = [
-        //     'post_title' => $eventData['title'] ?? '',
-        //     'post_content' => $eventData['description'] ?? '',
-        //     'post_excerpt' => $eventData['excerpt'] ?? '',
-        //     'post_status' => 'publish',
-        //     'post_type' => 'simpleview_event',
-        //     'meta_input' => [
-        //         'simpleview_id' => $eventData['id'] ?? '',
-        //         'simpleview_url' => $eventData['url'] ?? '',
-        //         // Add other event-specific meta fields
-        //     ],
-        // ];
+        // Extract product ID - can be @id or id
+        $simpleviewId = $eventData['@id'] ?? $eventData['id'] ?? '';
 
-        // Placeholder structure
+        // Extract name/title
+        $title = $eventData['name'] ?? __('Untitled Event', 'modularity-simpleview-events');
+
+        // Extract content from textList
+        $content = '';
+        $excerpt = '';
+
+        if (isset($eventData['textList']['text'])) {
+            $texts = $eventData['textList']['text'];
+
+            // Handle both single object and array
+            if (isset($texts[0])) {
+                // Array of texts
+                foreach ($texts as $text) {
+                    if (isset($text['@type'])) {
+                        if ($text['@type'] === 'HOVED' || $text['@type'] === 'HOVED_HTML') {
+                            $content = $text['#text'] ?? $text['#text'] ?? '';
+                        } elseif ($text['@type'] === 'INGRESS') {
+                            $excerpt = $text['#text'] ?? $text['#text'] ?? '';
+                        }
+                    }
+                }
+            } else {
+                // Single text object
+                if (isset($texts['@type'])) {
+                    if ($texts['@type'] === 'HOVED' || $texts['@type'] === 'HOVED_HTML') {
+                        $content = $texts['#text'] ?? $texts['#text'] ?? '';
+                    } elseif ($texts['@type'] === 'INGRESS') {
+                        $excerpt = $texts['#text'] ?? $texts['#text'] ?? '';
+                    }
+                }
+            }
+        }
+
         $post = [
-            'post_title' => $eventData['title'] ?? __('Untitled Event', 'modularity-simpleview-events'),
-            'post_content' => $eventData['description'] ?? '',
-            'post_excerpt' => $eventData['excerpt'] ?? '',
+            'post_title' => $title,
+            'post_content' => $content,
+            'post_excerpt' => $excerpt,
             'post_status' => 'publish',
-            'post_type' => 'simpleview_event',
+            'post_type' => $postTypeSlug,
             'meta_input' => [
-                'simpleview_id' => $eventData['id'] ?? '',
+                'simpleview_id' => (string) $simpleviewId,
             ],
         ];
 
@@ -57,27 +86,30 @@ class PostMapper
     /**
      * Get taxonomy term IDs for an event
      * 
-     * Events are assigned to the category term (child). WordPress taxonomy queries
-     * will automatically include events when viewing parent department archives
-     * due to hierarchical taxonomy behavior (include_children defaults to true).
+     * Extracts categories directly from the product's categoryList and maps them
+     * to the synced taxonomy terms.
      * 
      * @param array $eventData Single event data from API
-     * @param array $departments Array of department term IDs mapped by department identifier
-     * @param array $categories Array of category term IDs mapped by category identifier
+     * @param string $taxonomySlug The taxonomy slug
+     * @param array $categories Array of category term IDs mapped by Simpleview category ID
      * @return array Associative array with taxonomy slug as key and array of term IDs as value
      */
-    public function getTaxonomyTerms(array $eventData, array $departments, array $categories): array
+    public function getTaxonomyTerms(array $eventData, string $taxonomySlug, array $categories): array
     {
         $terms = [
-            'sv_event_category' => [],
+            $taxonomySlug => [],
         ];
 
-        // TODO: Extract category ID from event data once structure is known
-        // Events should be assigned to the category term (child), not the department term (parent)
-        // Example structure (to be updated):
-        // if (isset($eventData['category']['id']) && isset($categories[$eventData['category']['id']])) {
-        //     $terms['sv_event_category'][] = $categories[$eventData['category']['id']];
-        // }
+        // Extract categories from product's categoryList
+        $productCategories = $this->taxonomyMapper->extractCategoriesFromProduct($eventData);
+
+        // Map to synced taxonomy terms
+        foreach ($productCategories as $productCategory) {
+            $categoryId = $productCategory['id'] ?? '';
+            if (!empty($categoryId) && isset($categories[$categoryId])) {
+                $terms[$taxonomySlug][] = $categories[$categoryId];
+            }
+        }
 
         return $terms;
     }
@@ -85,13 +117,17 @@ class PostMapper
     /**
      * Find existing post by Simpleview ID
      * 
+     * Searches across all statuses including archived posts.
+     * 
      * @param string $simpleviewId Simpleview event ID
+     * @param string $postTypeSlug The post type slug to search in
      * @return int|null Post ID or null if not found
      */
-    public function findExistingPost(string $simpleviewId): ?int
+    public function findExistingPost(string $simpleviewId, string $postTypeSlug): ?int
     {
         $posts = get_posts([
-            'post_type' => 'simpleview_event',
+            'post_type' => $postTypeSlug,
+            'post_status' => ['publish', 'draft', 'archived'],
             'meta_key' => 'simpleview_id',
             'meta_value' => $simpleviewId,
             'posts_per_page' => 1,
@@ -105,13 +141,15 @@ class PostMapper
      * Create or update a post from event data
      * 
      * @param array $eventData Single event data from API
-     * @param array $departments Array of department term IDs mapped by department identifier
-     * @param array $categories Array of category term IDs mapped by category identifier
+     * @param string $postTypeSlug The post type slug
+     * @param string $taxonomySlug The taxonomy slug
+     * @param array $categories Array of category term IDs mapped by Simpleview category ID
      * @return int|WP_Error Post ID on success, WP_Error on failure
      */
-    public function createOrUpdatePost(array $eventData, array $departments, array $categories): int|\WP_Error
+    public function createOrUpdatePost(array $eventData, string $postTypeSlug, string $taxonomySlug, array $categories, ?string $mediaChannelName = null, ?string $mediaChannelId = null): int|\WP_Error
     {
-        $simpleviewId = $eventData['id'] ?? '';
+        // Extract Simpleview ID
+        $simpleviewId = $eventData['@id'] ?? $eventData['id'] ?? '';
 
         if (empty($simpleviewId)) {
             return new \WP_Error(
@@ -121,13 +159,29 @@ class PostMapper
         }
 
         // Check if post already exists
-        $existingPostId = $this->findExistingPost($simpleviewId);
+        $existingPostId = $this->findExistingPost((string) $simpleviewId, $postTypeSlug);
+
+        // If post exists and is archived, restore it first
+        if ($existingPostId && $this->postArchiver->isArchived($existingPostId)) {
+            $this->postArchiver->restorePost($existingPostId);
+        }
 
         // Map event data to post array
-        $postData = $this->mapToPost($eventData, $departments, $categories);
+        $postData = $this->mapToPost($eventData, $postTypeSlug);
+
+        // Ensure status is publish (in case it was archived)
+        $postData['post_status'] = 'publish';
+
+        // Add mediaChannel info to post meta if provided
+        if ($mediaChannelName) {
+            $postData['meta_input']['simpleview_media_channel_name'] = $mediaChannelName;
+        }
+        if ($mediaChannelId) {
+            $postData['meta_input']['simpleview_media_channel_id'] = $mediaChannelId;
+        }
 
         // Get taxonomy terms
-        $taxonomyTerms = $this->getTaxonomyTerms($eventData, $departments, $categories);
+        $taxonomyTerms = $this->getTaxonomyTerms($eventData, $taxonomySlug, $categories);
 
         if ($existingPostId) {
             // Update existing post

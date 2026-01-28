@@ -53,13 +53,7 @@ register_activation_hook(__FILE__, function () {
         require_once MODULARITYSIMPLEVIEWEVENTS_PATH . 'vendor/autoload.php';
     }
 
-    // Register post type and taxonomies
-    if (class_exists('ModularitySimpleviewEvents\PostType\SimpleviewEvent')) {
-        $postType = new ModularitySimpleviewEvents\PostType\SimpleviewEvent();
-        $postType->registerPostType();
-        $postType->registerTaxonomies();
-    }
-
+    // Dynamic post types are created during sync, so we just flush rewrite rules
     flush_rewrite_rules();
 });
 
@@ -82,4 +76,9 @@ register_deactivation_hook(__FILE__, function () {
 // Start application
 if (class_exists('ModularitySimpleviewEvents\App')) {
     new ModularitySimpleviewEvents\App();
+}
+
+// Register WP-CLI commands
+if (defined('WP_CLI') && WP_CLI) {
+    WP_CLI::add_command('simpleview-events', 'ModularitySimpleviewEvents\Cli\SimpleviewCommand');
 }

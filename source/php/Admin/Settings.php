@@ -29,9 +29,9 @@ class Settings
         if (function_exists('acf_add_options_sub_page')) {
             acf_add_options_sub_page([
                 'page_title'  => __('Simpleview Events Settings', 'modularity-simpleview-events'),
-                'menu_title'  => __('Settings', 'modularity-simpleview-events'),
+                'menu_title'  => __('Simpleview Events', 'modularity-simpleview-events'),
                 'menu_slug'   => 'simpleview-events-settings',
-                'parent_slug' => 'edit.php?post_type=simpleview_event',
+                'parent_slug' => 'options-general.php',
                 'post_id'     => 'simpleview-events-settings',
                 'capability'  => 'manage_options',
             ]);
@@ -61,8 +61,26 @@ class Settings
                     'message' => $result->get_error_message(),
                 ]);
             } else {
+                // Build success message with statistics
+                $message = sprintf(
+                    __('Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned', 'modularity-simpleview-events'),
+                    $result['created'] ?? 0,
+                    $result['updated'] ?? 0,
+                    $result['archived'] ?? 0,
+                    $result['restored'] ?? 0,
+                    $result['pruned'] ?? 0
+                );
+
+                if (!empty($result['warnings'] ?? [])) {
+                    $message .= '. ' . sprintf(__('Warnings: %d', 'modularity-simpleview-events'), count($result['warnings']));
+                }
+
+                if (!empty($result['errors'] ?? [])) {
+                    $message .= '. ' . sprintf(__('Errors: %d', 'modularity-simpleview-events'), count($result['errors']));
+                }
+
                 wp_send_json_success([
-                    'message' => __('Sync completed successfully', 'modularity-simpleview-events'),
+                    'message' => $message,
                     'data' => $result,
                 ]);
             }
@@ -206,7 +224,33 @@ class Settings
                             })
                             .then(function(data) {
                                 if (data.success) {
-                                    alert('<?php echo esc_js(__('Sync completed successfully', 'modularity-simpleview-events')); ?>');
+                                    var message = data.data?.message || '<?php echo esc_js(__('Sync completed successfully', 'modularity-simpleview-events')); ?>';
+                                    
+                                    // Show detailed statistics if available
+                                    if (data.data?.data) {
+                                        var stats = data.data.data;
+                                        var details = [];
+                                        
+                                        if (stats.created > 0) details.push(stats.created + ' created');
+                                        if (stats.updated > 0) details.push(stats.updated + ' updated');
+                                        if (stats.archived > 0) details.push(stats.archived + ' archived');
+                                        if (stats.restored > 0) details.push(stats.restored + ' restored');
+                                        if (stats.pruned > 0) details.push(stats.pruned + ' pruned');
+                                        
+                                        if (details.length > 0) {
+                                            message += '\n\n' + details.join(', ');
+                                        }
+                                        
+                                        if (stats.warnings && stats.warnings.length > 0) {
+                                            message += '\n\nWarnings:\n' + stats.warnings.join('\n');
+                                        }
+                                        
+                                        if (stats.errors && stats.errors.length > 0) {
+                                            message += '\n\nErrors: ' + stats.errors.length;
+                                        }
+                                    }
+                                    
+                                    alert(message);
                                 } else {
                                     alert('<?php echo esc_js(__('Sync failed:', 'modularity-simpleview-events')); ?> ' + (data.data?.message || 'Unknown error'));
                                 }

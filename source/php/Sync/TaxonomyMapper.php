@@ -6,95 +6,117 @@ namespace ModularitySimpleviewEvents\Sync;
  * Class TaxonomyMapper
  * 
  * Maps Simpleview API data to WordPress taxonomy.
- * Extracts departments (top-level terms) and categories (child terms) from API response.
+ * Extracts categories from products within a specific mediaChannel.
  * 
  * @package ModularitySimpleviewEvents\Sync
  */
 class TaxonomyMapper
 {
-    private const TAXONOMY = 'sv_event_category';
-
     /**
-     * Extract and sync departments from API data as top-level terms
+     * Extract and sync categories from products within a mediaChannel
      * 
-     * This is a placeholder method. The actual extraction logic
-     * will be implemented once the API data structure is provided.
+     * Extracts categories from categoryList.category.categorySubType1List.categorySubType1
      * 
-     * @param array $events Array of event data from API
-     * @return array Array of department term IDs mapped by department identifier
+     * @param array $products Array of product data from API (filtered by mediaChannel)
+     * @param string $taxonomySlug The taxonomy slug to sync to
+     * @param string $postTypeSlug The post type slug (for validation)
+     * @return array Array of category term IDs mapped by Simpleview category ID
      */
-    public function syncDepartments(array $events): array
-    {
-        $departments = [];
-
-        // TODO: Extract unique departments from events once API structure is known
-        // Example structure (to be updated):
-        // foreach ($events as $event) {
-        //     if (isset($event['department'])) {
-        //         $deptId = $event['department']['id'];
-        //         $deptName = $event['department']['name'];
-        //         
-        //         if (!isset($departments[$deptId])) {
-        //             $termId = $this->createOrUpdateTerm(
-        //                 self::TAXONOMY,
-        //                 $deptName,
-        //                 ['simpleview_id' => $deptId],
-        //                 0 // Top-level term (parent = 0)
-        //             );
-        //             $departments[$deptId] = $termId;
-        //         }
-        //     }
-        // }
-
-        return $departments;
-    }
-
-    /**
-     * Extract and sync categories from API data as child terms under departments
-     * 
-     * This is a placeholder method. The actual extraction logic
-     * will be implemented once the API data structure is provided.
-     * 
-     * @param array $events Array of event data from API
-     * @param array $departments Array of department term IDs mapped by department identifier
-     * @return array Array of category term IDs mapped by category identifier
-     */
-    public function syncCategories(array $events, array $departments): array
+    public function syncCategories(array $products, string $taxonomySlug, string $postTypeSlug): array
     {
         $categories = [];
+        $uniqueCategories = [];
 
-        // TODO: Extract unique categories from events once API structure is known
-        // Categories should be linked to their parent departments
-        // Example structure (to be updated):
-        // foreach ($events as $event) {
-        //     if (isset($event['category'])) {
-        //         $catId = $event['category']['id'];
-        //         $catName = $event['category']['name'];
-        //         $deptId = $event['department']['id'];
-        //         
-        //         if (!isset($categories[$catId])) {
-        //             $parentTermId = $departments[$deptId] ?? 0;
-        //             $termId = $this->createOrUpdateTerm(
-        //                 self::TAXONOMY,
-        //                 $catName,
-        //                 ['simpleview_id' => $catId],
-        //                 $parentTermId // Child term under department
-        //             );
-        //             $categories[$catId] = $termId;
-        //         }
-        //     }
-        // }
+        // Extract unique categories from all products
+        foreach ($products as $product) {
+            $categoryData = $this->extractCategoriesFromProduct($product);
+
+            foreach ($categoryData as $category) {
+                $categoryId = $category['id'] ?? '';
+                $categoryName = $category['name'] ?? '';
+
+                if (!empty($categoryId) && !empty($categoryName)) {
+                    // Use category ID as key to ensure uniqueness
+                    if (!isset($uniqueCategories[$categoryId])) {
+                        $uniqueCategories[$categoryId] = $categoryName;
+                    }
+                }
+            }
+        }
+
+        // Create/update terms for each unique category
+        foreach ($uniqueCategories as $categoryId => $categoryName) {
+            $termId = $this->createOrUpdateTerm(
+                $taxonomySlug,
+                $categoryName,
+                ['simpleview_id' => $categoryId],
+                0 // Categories are flat (no hierarchy)
+            );
+
+            if ($termId > 0) {
+                $categories[$categoryId] = $termId;
+            }
+        }
 
         return $categories;
     }
 
     /**
-     * Create or update a taxonomy term in sv_event_category
+     * Extract categories from a single product
      * 
-     * @param string $taxonomy Taxonomy slug (should be sv_event_category)
+     * Handles the structure: categoryList.category.categorySubType1List.categorySubType1
+     * Can be single object or array
+     * 
+     * @param array $product Single product data from API
+     * @return array Array of category data with 'id' and 'name' keys
+     */
+    public function extractCategoriesFromProduct(array $product): array
+    {
+        $categories = [];
+
+        // Navigate: categoryList -> category -> categorySubType1List -> categorySubType1
+        if (!isset($product['categoryList']['category'])) {
+            return $categories;
+        }
+
+        $category = $product['categoryList']['category'];
+
+        // Handle both single object and array
+        if (isset($category['categorySubType1List']['categorySubType1'])) {
+            $subType1 = $category['categorySubType1List']['categorySubType1'];
+
+            // Handle both single object and array
+            if (isset($subType1[0])) {
+                // Array of categorySubType1
+                foreach ($subType1 as $subType) {
+                    if (isset($subType['@id']) && isset($subType['name'])) {
+                        $categories[] = [
+                            'id' => (string) $subType['@id'],
+                            'name' => $subType['name'],
+                        ];
+                    }
+                }
+            } else {
+                // Single categorySubType1 object
+                if (isset($subType1['@id']) && isset($subType1['name'])) {
+                    $categories[] = [
+                        'id' => (string) $subType1['@id'],
+                        'name' => $subType1['name'],
+                    ];
+                }
+            }
+        }
+
+        return $categories;
+    }
+
+    /**
+     * Create or update a taxonomy term
+     * 
+     * @param string $taxonomy Taxonomy slug
      * @param string $name Term name
      * @param array $meta Meta fields to set (e.g., simpleview_id)
-     * @param int $parent Parent term ID (0 for top-level/department terms)
+     * @param int $parent Parent term ID (0 for flat categories)
      * @return int Term ID
      */
     private function createOrUpdateTerm(string $taxonomy, string $name, array $meta = [], int $parent = 0): int
@@ -128,7 +150,7 @@ class TaxonomyMapper
                 'name' => $name,
                 'hide_empty' => false,
             ];
-            
+
             // If parent is specified, also check parent to ensure we get the right term
             if ($parent > 0) {
                 $args['parent'] = $parent;
@@ -136,7 +158,7 @@ class TaxonomyMapper
                 // For top-level terms, explicitly check parent is 0
                 $args['parent'] = 0;
             }
-            
+
             $terms = get_terms($args);
 
             if (!is_wp_error($terms) && !empty($terms)) {
