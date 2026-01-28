@@ -4,6 +4,7 @@ namespace ModularitySimpleviewEvents\Sync;
 
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
 use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
+use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
 
 /**
  * Class DataWiper
@@ -65,13 +66,26 @@ class DataWiper
             ));
         }
 
-        // Delete posts for each post type
+        // Ensure archived post status is registered before getting all statuses
+        // This is important when called from WP-CLI or before init hook runs
+        $archivedStatus = new ArchivedPostStatus();
+        $archivedStatus->register();
+
+        // Get all registered post statuses (including the custom 'archived' status)
+        $post_statuses = get_post_stati();
+        
+        // Filter out 'trash' status - we don't want to delete already trashed posts
+        $post_statuses = array_filter($post_statuses, function($status) {
+            return $status !== 'trash';
+        });
+
+        // Delete posts for each post type (including archived posts)
         foreach ($postTypeSlugs as $postTypeSlug) {
             $posts = get_posts([
-                'post_type' => $postTypeSlug,
+                'post_type'      => $postTypeSlug,
                 'posts_per_page' => -1,
-                'post_status' => 'any',
-                'fields' => 'ids',
+                'post_status'    => array_values($post_statuses), // Re-index array
+                'fields'         => 'ids',
             ]);
 
             foreach ($posts as $postId) {
