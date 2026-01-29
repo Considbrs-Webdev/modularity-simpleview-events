@@ -72,7 +72,11 @@ class SimpleviewClient
      */
     private function fetchFromMockFile(): array|\WP_Error
     {
-        $mockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json';
+        // Prefer the slimmed mock file when present (faster for development/testing)
+        $slimmedMockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview-slimmed.json';
+        $mockFile = file_exists($slimmedMockFile)
+            ? $slimmedMockFile
+            : (MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json');
 
         if (!file_exists($mockFile)) {
             return new \WP_Error(

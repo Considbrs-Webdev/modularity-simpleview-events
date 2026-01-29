@@ -16,11 +16,17 @@ class PostMapper
 {
     private TaxonomyMapper $taxonomyMapper;
     private PostArchiver $postArchiver;
+    private SimpleviewEventMetaBuilder $eventMetaBuilder;
 
-    public function __construct(?TaxonomyMapper $taxonomyMapper = null, ?PostArchiver $postArchiver = null)
+    public function __construct(
+        ?TaxonomyMapper $taxonomyMapper = null,
+        ?PostArchiver $postArchiver = null,
+        ?SimpleviewEventMetaBuilder $eventMetaBuilder = null
+    )
     {
         $this->taxonomyMapper = $taxonomyMapper ?? new TaxonomyMapper();
         $this->postArchiver = $postArchiver ?? new PostArchiver();
+        $this->eventMetaBuilder = $eventMetaBuilder ?? new SimpleviewEventMetaBuilder();
     }
 
     /**
@@ -79,6 +85,12 @@ class PostMapper
                 'simpleview_id' => (string) $simpleviewId,
             ],
         ];
+
+        // Build additional event meta (e.g. start_date, location) from API payload
+        $extraMeta = $this->eventMetaBuilder->buildMeta($eventData);
+        if (!empty($extraMeta)) {
+            $post['meta_input'] = array_merge($post['meta_input'], $extraMeta);
+        }
 
         return $post;
     }
