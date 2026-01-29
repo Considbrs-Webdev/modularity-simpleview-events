@@ -7,6 +7,7 @@ use ModularitySimpleviewEvents\Cron\SyncScheduler;
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
 use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
 use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
+use ModularitySimpleviewEvents\ApplyDecorator\ApplySimpleviewEventData;
 
 /**
  * Class App
@@ -18,6 +19,13 @@ use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
  */
 class App
 {
+    /**
+     * Memoized dynamic post types list for current request.
+     *
+     * @var string[]|null
+     */
+    private ?array $registeredSimpleviewPostTypes = null;
+
     public function __construct()
     {
         // Initialize settings page
@@ -33,6 +41,56 @@ class App
         // Must be registered on every init to appear in admin menu
         add_action('init', [$this, 'registerDynamicPostTypes'], 20);
         add_action('init', [$this, 'registerDynamicTaxonomies'], 21);
+
+        add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
+        
+        add_filter('Municipio/DecoratePostObject', function ($postObject) {
+            if (!is_object($postObject) || !method_exists($postObject, 'getPostType') || !method_exists($postObject, 'getId')) {
+                return $postObject;
+            }
+
+            $postType = $postObject->getPostType();
+            $dynamicPostTypes = $this->getRegisteredSimpleviewPostTypes();
+
+            if (empty($dynamicPostTypes) || !in_array($postType, $dynamicPostTypes, true)) {
+                return $postObject;
+            }
+
+            $postId = $postObject->getId();
+            $wpPost = get_post($postId);
+
+            if (!$wpPost || $wpPost->post_type !== $postType) {
+                return $postObject;
+            }
+
+            $decoratedPost = (new ApplySimpleviewEventData())->apply($wpPost);
+
+            // PostObjectInterface supports dynamic properties via __get/__set
+            if (isset($decoratedPost->simpleviewEventData)) {
+                $postObject->simpleviewEventData = $decoratedPost->simpleviewEventData;
+            }
+
+            return $postObject;
+        }, 10, 1);
+    }
+
+    /**
+     * Add plugin view paths to Municipio for custom templates
+     *
+     * NOTE: BladeService.makeView() prepends paths in a loop, which REVERSES the order!
+     * So to be checked FIRST, our path must be LAST in the array.
+     *
+     * @param array $paths The existing view paths
+     * @return array The modified view paths
+     */
+    public function addViewPaths(array $paths): array
+    {
+        if ($this->isSimpleviewEventsContext()) {
+            // Add at the END - will be prepended LAST, so checked FIRST
+            $paths[] = MODULARITYSIMPLEVIEWEVENTS_PATH . 'views';
+        }
+
+        return $paths;
     }
 
     /**
@@ -168,6 +226,64 @@ class App
         }
         
         return $discovered;
+    }
+
+    /**
+     * Get registered dynamic post type slugs for Simpleview events.
+     *
+     * @return string[]
+     */
+    private function getRegisteredSimpleviewPostTypes(): array
+    {
+        if ($this->registeredSimpleviewPostTypes !== null) {
+            return $this->registeredSimpleviewPostTypes;
+        }
+
+        $optionKey = 'simpleview_events_registered_post_types';
+        $optionValue = get_option($optionKey, []);
+        $registered = is_array($optionValue) ? $optionValue : [];
+
+        if (empty($registered)) {
+            wp_cache_delete($optionKey, 'options');
+            $optionValue = get_option($optionKey, []);
+            $registered = is_array($optionValue) ? $optionValue : [];
+
+            if (empty($registered)) {
+                $registered = $this->discoverPostTypesFromDatabase();
+            }
+        }
+
+        $this->registeredSimpleviewPostTypes = array_values(array_filter(array_keys($registered), 'is_string'));
+
+        return $this->registeredSimpleviewPostTypes;
+    }
+
+    /**
+     * Determine whether the current request should use plugin templates.
+     *
+     * Applies to:
+     * - Single pages for any dynamic sv_* post type
+     * - Archive pages for any dynamic sv_* post type
+     * - Category taxonomy archives for any dynamic sv_* post type (sv_*_category)
+     */
+    private function isSimpleviewEventsContext(): bool
+    {
+        $postTypes = $this->getRegisteredSimpleviewPostTypes();
+
+        if (empty($postTypes)) {
+            return false;
+        }
+
+        if (is_singular($postTypes) || is_post_type_archive($postTypes)) {
+            return true;
+        }
+
+        $taxonomies = array_map(
+            static fn(string $postType): string => $postType . '_category',
+            $postTypes
+        );
+
+        return !empty($taxonomies) && is_tax($taxonomies);
     }
 
     /**

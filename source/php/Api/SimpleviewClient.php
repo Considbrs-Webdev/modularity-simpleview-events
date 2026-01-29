@@ -236,6 +236,10 @@ class SimpleviewClient
             return true;
         }
 
-        return !empty($this->baseUrl) && !empty($this->apiKey);
+        if (!empty($this->baseUrl) && !empty($this->apiKey)) {
+            return true;
+        }
+
+        return false;
     }
 }
