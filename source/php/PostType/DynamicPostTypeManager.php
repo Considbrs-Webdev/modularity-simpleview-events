@@ -23,6 +23,7 @@ class DynamicPostTypeManager
     public function registerPostTypeForMediaChannel(string $mediaChannelName, string $mediaChannelId): string
     {
         $postTypeSlug = $this->getPostTypeSlug($mediaChannelName);
+        $cleanPostTypeSlug = $this->cleanPostTypeSlug($postTypeSlug);
 
         // Always register - WordPress handles duplicate registrations gracefully
         // This ensures post types appear in admin menu on every page load
@@ -68,7 +69,7 @@ class DynamicPostTypeManager
             'show_in_menu'       => true,
             'query_var'          => true,
             'rewrite'            => [
-                'slug' => $postTypeSlug,
+                'slug' => $cleanPostTypeSlug,
                 'with_front' => false,
             ],
             'capability_type'    => 'post',
@@ -100,6 +101,17 @@ class DynamicPostTypeManager
         $slug = sanitize_title($mediaChannelName);
         $slug = str_replace('-', '_', $slug);
         return 'sv_' . $slug;
+    }
+
+    /**
+     * Clean post type slug by removing the sv_ prefix
+     * 
+     * @param string $postTypeSlug The post type slug
+     * @return string The cleaned post type slug
+     */
+    public function cleanPostTypeSlug(string $postTypeSlug): string
+    {
+        return str_replace('sv_', '', $postTypeSlug);
     }
 
     /**

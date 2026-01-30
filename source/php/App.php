@@ -43,7 +43,7 @@ class App
         add_action('init', [$this, 'registerDynamicTaxonomies'], 21);
 
         add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
-        
+
         add_filter('Municipio/DecoratePostObject', function ($postObject) {
             if (!is_object($postObject) || !method_exists($postObject, 'getPostType') || !method_exists($postObject, 'getId')) {
                 return $postObject;
@@ -123,11 +123,11 @@ class App
             // Try to flush options cache and re-read
             wp_cache_delete($optionKey, 'options');
             $registered = get_option($optionKey, []);
-            
+
             // Fallback: If option is still empty, discover post types from existing posts
             if (empty($registered)) {
                 $registered = $this->discoverPostTypesFromDatabase();
-                
+
                 // Save discovered post types to option
                 if (!empty($registered)) {
                     update_option($optionKey, $registered);
@@ -177,7 +177,7 @@ class App
     private function discoverPostTypesFromDatabase(): array
     {
         global $wpdb;
-        
+
         // Find all post types that start with 'sv_' and have posts
         $postTypes = $wpdb->get_col($wpdb->prepare(
             "SELECT DISTINCT post_type FROM {$wpdb->posts} 
@@ -186,13 +186,13 @@ class App
             LIMIT 20",
             'sv_%'
         ));
-        
+
         if (empty($postTypes)) {
             return [];
         }
-        
+
         $discovered = [];
-        
+
         foreach ($postTypes as $postTypeSlug) {
             // Try to find a post with this post type that has simpleview_id meta
             $postId = $wpdb->get_var($wpdb->prepare(
@@ -204,19 +204,19 @@ class App
                 LIMIT 1",
                 $postTypeSlug
             ));
-            
+
             if ($postId) {
                 // Get mediaChannel info from post meta (stored during sync)
                 $mediaChannelName = get_post_meta($postId, 'simpleview_media_channel_name', true);
                 $mediaChannelId = get_post_meta($postId, 'simpleview_media_channel_id', true);
-                
+
                 // Fallback: reconstruct name from post type slug if meta not found
                 if (empty($mediaChannelName)) {
                     $mediaChannelName = str_replace('sv_', '', $postTypeSlug);
                     $mediaChannelName = str_replace('_', ' ', $mediaChannelName);
                     $mediaChannelName = ucwords($mediaChannelName);
                 }
-                
+
                 $discovered[$postTypeSlug] = [
                     'name' => $mediaChannelName,
                     'id' => $mediaChannelId ?: 'discovered',
@@ -224,7 +224,7 @@ class App
                 ];
             }
         }
-        
+
         return $discovered;
     }
 
@@ -272,6 +272,16 @@ class App
 
         if (empty($postTypes)) {
             return false;
+        }
+
+        // More robust than conditional tags alone: check queried vars.
+        // This helps ensure our view path is registered early enough for PostsList rendering.
+        $queriedPostType = get_query_var('post_type');
+        if (is_string($queriedPostType) && in_array($queriedPostType, $postTypes, true)) {
+            return true;
+        }
+        if (is_array($queriedPostType) && !empty(array_intersect($queriedPostType, $postTypes))) {
+            return true;
         }
 
         if (is_singular($postTypes) || is_post_type_archive($postTypes)) {

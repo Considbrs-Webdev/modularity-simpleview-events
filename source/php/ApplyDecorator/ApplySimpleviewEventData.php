@@ -44,18 +44,65 @@ class ApplySimpleviewEventData implements PostDecorator
             return $post;
         }
 
-        // Placeholder data for now (we'll enrich later)
         $mediaChannelName = $wpService->getPostMeta($postId, 'simpleview_media_channel_name', true) ?: null;
         $mediaChannelId = $wpService->getPostMeta($postId, 'simpleview_media_channel_id', true) ?: null;
         $simpleviewId = $wpService->getPostMeta($postId, 'simpleview_id', true) ?: null;
         $startDate = $wpService->getPostMeta($postId, 'start_date', true) ?: null; // Y-m-d H:i:s (Europe/Stockholm)
+        $endDate = $wpService->getPostMeta($postId, 'simpleview_event_end_date', true) ?: null; // Y-m-d H:i:s (Europe/Stockholm), optional
         $locationName = $wpService->getPostMeta($postId, 'simpleview_event_location_name', true) ?: null;
+        $imageJson = $wpService->getPostMeta($postId, 'simpleview_event_image_json', true) ?: null;
+        $image = null;
+        if (is_string($imageJson) && $imageJson !== '') {
+            $decoded = json_decode($imageJson, true);
+            if (is_array($decoded) && !empty($decoded['src'])) {
+                // Shape matches Municipio card/image expectations (src/alt plus optional srcset/sizes)
+                $image = [
+                    'src' => (string) ($decoded['src'] ?? ''),
+                    'alt' => (string) ($decoded['alt'] ?? ($post->post_title ?? '')),
+                    'srcset' => !empty($decoded['srcset']) ? (string) $decoded['srcset'] : null,
+                    'sizes' => !empty($decoded['sizes']) ? (string) $decoded['sizes'] : null,
+                ];
+            }
+        }
 
         $startTimestamp = null;
         if (is_string($startDate) && $startDate !== '') {
-            $timestamp = strtotime($startDate);
-            if ($timestamp !== false) {
-                $startTimestamp = $timestamp;
+            $tz = wp_timezone();
+            $dt = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $startDate, $tz);
+            if ($dt !== false) {
+                $startTimestamp = $dt->getTimestamp();
+            }
+        }
+
+        $endTimestamp = null;
+        if (is_string($endDate) && $endDate !== '') {
+            $tz = wp_timezone();
+            $dtEnd = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $endDate, $tz);
+            if ($dtEnd !== false) {
+                $endTimestamp = $dtEnd->getTimestamp();
+            }
+        }
+
+        $date = $startTimestamp ? ['timestamp' => $startTimestamp, 'action' => 'formatDate'] : null;
+        $dateBadge = !empty($image) && !empty($startTimestamp);
+
+        $dateTimeLabel = null;
+        if (!empty($startTimestamp)) {
+            // Example desired: "Tisdag, 16 september, 12.00 - 16.00"
+            $dayAndDate = date_i18n('l, j F', (int) $startTimestamp);
+            // Capitalize first letter (Swedish weekdays are often lower-case)
+            if (is_string($dayAndDate) && $dayAndDate !== '') {
+                $first = mb_substr($dayAndDate, 0, 1, 'UTF-8');
+                $rest = mb_substr($dayAndDate, 1, null, 'UTF-8');
+                $dayAndDate = mb_strtoupper($first, 'UTF-8') . $rest;
+            }
+
+            $startTime = date_i18n('H.i', (int) $startTimestamp);
+            $dateTimeLabel = $dayAndDate . ', ' . $startTime;
+
+            if (!empty($endTimestamp)) {
+                $endTime = date_i18n('H.i', (int) $endTimestamp);
+                $dateTimeLabel .= ' - ' . $endTime;
             }
         }
 
@@ -66,7 +113,13 @@ class ApplySimpleviewEventData implements PostDecorator
             'simpleviewId' => $simpleviewId,
             'startDate' => $startDate,
             'startTimestamp' => $startTimestamp,
+            'endDate' => $endDate,
+            'endTimestamp' => $endTimestamp,
+            'dateTimeLabel' => $dateTimeLabel,
             'locationName' => $locationName,
+            'image' => $image,
+            'date' => $date,
+            'dateBadge' => $dateBadge,
             'ariaLabel' => $post->post_title ?? '',
         ];
 
