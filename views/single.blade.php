@@ -2,6 +2,7 @@
 
 @section('loop')
     @if (!empty($post))
+
         @element([
             'componentElement' => 'article',
             'id' => 'article',
@@ -23,7 +24,7 @@
             @show
             @section('article.title.after')@show
 
-            {{-- Simpleview Event Metadata --}}
+            {{-- Simpleview Event Metadata (same as archive card) --}}
             @if (!empty($post->simpleviewEventData))
                 <div class="c-simpleview-event-single__meta-wrapper u-margin__bottom--5">
                     @include('partials.simpleview-event.meta')

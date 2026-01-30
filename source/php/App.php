@@ -38,9 +38,12 @@ class App
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
 
         // Register dynamic post types and taxonomies on init (they're created during sync)
-        // Must be registered on every init to appear in admin menu
-        add_action('init', [$this, 'registerDynamicPostTypes'], 20);
-        add_action('init', [$this, 'registerDynamicTaxonomies'], 21);
+        //
+        // Important: run EARLY so themes/plugins (e.g. Municipio/Modularity archive editor)
+        // can discover these post types when they build admin/archive configuration.
+        // Still safe: register_post_type/register_taxonomy are idempotent.
+        add_action('init', [$this, 'registerDynamicPostTypes'], 0);
+        add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
 
         add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
 

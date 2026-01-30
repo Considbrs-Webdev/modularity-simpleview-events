@@ -1,53 +1,35 @@
-@if (!empty($post->municipalEventData))
-    <ul class="c-municipal-event-single__meta unlist">
-        {{-- Administration --}}
-        @if (!empty($post->municipalEventData->administration))
-            <li class="c-municipal-event-single__meta-item">
-                @if ($post->municipalEventData->administrationIcon)
-                    @icon(['icon' => $post->municipalEventData->administrationIcon])
-                    @endicon
-                @else
-                    @icon(['icon' => 'fa-solid fa-building'])
-                    @endicon
-                @endif
-                <span>{{ $post->municipalEventData->administration->name }}</span>
-            </li>
-        @endif
-
-        {{-- Time Range --}}
-        @if (!empty($post->municipalEventData->timeRange))
-            <li class="c-municipal-event-single__meta-item">
-                @icon(['icon' => 'fa-solid fa-clock'])
+@if (!empty($post->simpleviewEventData))
+    <ul class="c-simpleview-event-single__meta unlist">
+        {{-- Calendar / Media channel --}}
+        @if (!empty($post->simpleviewEventData->mediaChannelName))
+            <li class="c-simpleview-event-single__meta-item">
+                @icon(['icon' => 'fa-solid fa-calendar'])
                 @endicon
-                <span>{{ $post->municipalEventData->timeRange }}</span>
+                <span>{{ $post->simpleviewEventData->mediaChannelName }}</span>
             </li>
         @endif
 
-        {{-- Place --}}
-        @if (!empty($post->municipalEventData->place))
-            <li class="c-municipal-event-single__meta-item">
-                @if ($post->municipalEventData->placeIcon)
-                    @icon(['icon' => $post->municipalEventData->placeIcon])
-                    @endicon
-                @else
-                    @icon(['icon' => 'fa-solid fa-map-marker-alt'])
-                    @endicon
-                @endif
-                <span>{{ $post->municipalEventData->place->name }}</span>
+        {{-- Date + time range (end time only if provided) --}}
+        @if (!empty($post->simpleviewEventData->dateTimeLabel))
+            <li class="c-simpleview-event-single__meta-item">
+                @icon(['icon' => 'fa-solid fa-calendar-days'])
+                @endicon
+                <span>{{ $post->simpleviewEventData->dateTimeLabel }}</span>
+            </li>
+        @elseif (!empty($post->simpleviewEventData->startDate))
+            <li class="c-simpleview-event-single__meta-item">
+                @icon(['icon' => 'fa-solid fa-calendar-days'])
+                @endicon
+                <span>{{ $post->simpleviewEventData->startDate }}</span>
             </li>
         @endif
 
-        {{-- Type of event/meeting --}}
-        @if (!empty($post->municipalEventData->type))
-            <li class="c-municipal-event-single__meta-item">
-                @if ($post->municipalEventData->typeIcon)
-                    @icon(['icon' => $post->municipalEventData->typeIcon])
-                    @endicon
-                @else
-                    @icon(['icon' => 'fa-solid fa-calendar-check'])
-                    @endicon
-                @endif
-                <span>{{ $post->municipalEventData->type->name }}</span>
+        {{-- Location --}}
+        @if (!empty($post->simpleviewEventData->locationName))
+            <li class="c-simpleview-event-single__meta-item">
+                @icon(['icon' => 'fa-solid fa-location-dot'])
+                @endicon
+                <span>{{ $post->simpleviewEventData->locationName }}</span>
             </li>
         @endif
     </ul>
