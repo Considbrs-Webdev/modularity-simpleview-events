@@ -52,6 +52,7 @@ class ApplySimpleviewEventData implements PostDecorator
         $locationName = $wpService->getPostMeta($postId, 'simpleview_event_location_name', true) ?: null;
         $imageJson = $wpService->getPostMeta($postId, 'simpleview_event_image_json', true) ?: null;
         $image = null;
+        $imageHero = null;
         if (is_string($imageJson) && $imageJson !== '') {
             $decoded = json_decode($imageJson, true);
             if (is_array($decoded) && !empty($decoded['src'])) {
@@ -61,6 +62,13 @@ class ApplySimpleviewEventData implements PostDecorator
                     'alt' => (string) ($decoded['alt'] ?? ($post->post_title ?? '')),
                     'srcset' => !empty($decoded['srcset']) ? (string) $decoded['srcset'] : null,
                     'sizes' => !empty($decoded['sizes']) ? (string) $decoded['sizes'] : null,
+                ];
+                $heroSrc = $this->heroImageSrc($image['src']);
+                $imageHero = [
+                    'src' => $heroSrc,
+                    'alt' => $image['alt'],
+                    'srcset' => $image['srcset'],
+                    'sizes' => '100vw',
                 ];
             }
         }
@@ -118,11 +126,37 @@ class ApplySimpleviewEventData implements PostDecorator
             'dateTimeLabel' => $dateTimeLabel,
             'locationName' => $locationName,
             'image' => $image,
+            'imageHero' => $imageHero,
             'date' => $date,
             'dateBadge' => $dateBadge,
             'ariaLabel' => $post->post_title ?? '',
         ];
 
         return $post;
+    }
+
+    /**
+     * For single-view hero: return a higher-resolution image URL when the API uses dimension query params (e.g. dw=630).
+     * Card/theme often use only src, so we must supply a larger URL here instead of relying on srcset/sizes.
+     */
+    private function heroImageSrc(string $src): string
+    {
+        if ($src === '') {
+            return $src;
+        }
+        $heroWidth = 1920;
+        $hasDw = preg_match('/[?&]dw=(\d+)/', $src, $dw);
+        $hasDh = preg_match('/[?&]dh=(\d+)/', $src, $dh);
+        if ($hasDw) {
+            $w = (int) $dw[1];
+            $newH = $hasDh && $w > 0
+                ? (int) round((int) $dh[1] * $heroWidth / $w)
+                : null;
+            $src = preg_replace('/([?&])dw=\d+/', '${1}dw=' . $heroWidth, $src, 1);
+            if ($newH !== null) {
+                $src = preg_replace('/([?&])dh=\d+/', '${1}dh=' . $newH, $src, 1);
+            }
+        }
+        return $src;
     }
 }

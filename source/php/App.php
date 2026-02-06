@@ -12,9 +12,6 @@ use ModularitySimpleviewEvents\ApplyDecorator\ApplySimpleviewEventData;
 /**
  * Class App
  * 
- * Main application bootstrap class.
- * Initialize your plugin components here.
- * 
  * @package ModularitySimpleviewEvents
  */
 class App
@@ -28,60 +25,21 @@ class App
 
     public function __construct()
     {
-        // Initialize settings page
         new Settings();
 
-        // Initialize cron scheduler
         new SyncScheduler();
 
-        // Register archived post status on init
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
-
-        // Register dynamic post types and taxonomies on init (they're created during sync)
-        //
-        // Important: run EARLY so themes/plugins (e.g. Municipio/Modularity archive editor)
-        // can discover these post types when they build admin/archive configuration.
-        // Still safe: register_post_type/register_taxonomy are idempotent.
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
-
         add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
-
-        add_filter('Municipio/DecoratePostObject', function ($postObject) {
-            if (!is_object($postObject) || !method_exists($postObject, 'getPostType') || !method_exists($postObject, 'getId')) {
-                return $postObject;
-            }
-
-            $postType = $postObject->getPostType();
-            $dynamicPostTypes = $this->getRegisteredSimpleviewPostTypes();
-
-            if (empty($dynamicPostTypes) || !in_array($postType, $dynamicPostTypes, true)) {
-                return $postObject;
-            }
-
-            $postId = $postObject->getId();
-            $wpPost = get_post($postId);
-
-            if (!$wpPost || $wpPost->post_type !== $postType) {
-                return $postObject;
-            }
-
-            $decoratedPost = (new ApplySimpleviewEventData())->apply($wpPost);
-
-            // PostObjectInterface supports dynamic properties via __get/__set
-            if (isset($decoratedPost->simpleviewEventData)) {
-                $postObject->simpleviewEventData = $decoratedPost->simpleviewEventData;
-            }
-
-            return $postObject;
-        }, 10, 1);
+        add_filter('/Modularity/externalViewPath', [$this, 'addPostsModuleViewPath']);
+        add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
+        add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
     }
 
     /**
      * Add plugin view paths to Municipio for custom templates
-     *
-     * NOTE: BladeService.makeView() prepends paths in a loop, which REVERSES the order!
-     * So to be checked FIRST, our path must be LAST in the array.
      *
      * @param array $paths The existing view paths
      * @return array The modified view paths
@@ -89,11 +47,49 @@ class App
     public function addViewPaths(array $paths): array
     {
         if ($this->isSimpleviewEventsContext()) {
-            // Add at the END - will be prepended LAST, so checked FIRST
             $paths[] = MODULARITYSIMPLEVIEWEVENTS_PATH . 'views';
         }
 
         return $paths;
+    }
+
+    /**
+     * Add our view path to the Posts module view paths
+     *
+     * @param array $externalViewPaths Module post_type => view path mapping
+     * @return array Modified mapping
+     */
+    public function addPostsModuleViewPath(array $externalViewPaths): array
+    {
+        if ($this->isSimpleviewEventsContext()) {
+            $postsModuleViewPath = defined('MODULARITY_PATH')
+                ? MODULARITY_PATH . 'source/php/Module/Posts/views'
+                : '';
+
+            // Return array with our path last (will be prepended last = checked first)
+            $externalViewPaths['mod-posts'] = [
+                $postsModuleViewPath,
+                MODULARITYSIMPLEVIEWEVENTS_PATH . 'views',
+            ];
+        }
+
+        return $externalViewPaths;
+    }
+
+    /**
+     * Add body class on Simpleview calendar archive pages for easier styling.
+     *
+     * @param array $classes Existing body classes
+     * @return array Modified body classes
+     */
+    public function addSimpleviewBodyClass(array $classes): array
+    {
+        $postTypes = $this->getRegisteredSimpleviewPostTypes();
+        if (!empty($postTypes) && (is_post_type_archive($postTypes) || is_singular($postTypes))) {
+            $classes[] = 'archive-simpleview';
+        }
+
+        return $classes;
     }
 
     /**
@@ -123,15 +119,11 @@ class App
         $registered = is_array($optionValue) ? $optionValue : [];
 
         if (empty($registered)) {
-            // Try to flush options cache and re-read
             wp_cache_delete($optionKey, 'options');
             $registered = get_option($optionKey, []);
 
-            // Fallback: If option is still empty, discover post types from existing posts
             if (empty($registered)) {
                 $registered = $this->discoverPostTypesFromDatabase();
-
-                // Save discovered post types to option
                 if (!empty($registered)) {
                     update_option($optionKey, $registered);
                 }
@@ -139,8 +131,6 @@ class App
         }
 
         foreach ($registered as $postTypeSlug => $info) {
-            // Always register on init - WordPress handles duplicates gracefully
-            // Post types must be registered on every page load to appear in admin menu
             $postTypeManager->registerPostTypeForMediaChannel(
                 $info['name'] ?? '',
                 $info['id'] ?? ''
@@ -172,9 +162,6 @@ class App
     /**
      * Discover post types from existing posts in database
      * 
-     * Fallback method when option is empty - finds post types that start with 'sv_'
-     * and have posts, then reconstructs the option data from post meta
-     * 
      * @return array Array of post type data in same format as option
      */
     private function discoverPostTypesFromDatabase(): array
@@ -197,7 +184,6 @@ class App
         $discovered = [];
 
         foreach ($postTypes as $postTypeSlug) {
-            // Try to find a post with this post type that has simpleview_id meta
             $postId = $wpdb->get_var($wpdb->prepare(
                 "SELECT p.ID FROM {$wpdb->posts} p
                 INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
@@ -209,11 +195,9 @@ class App
             ));
 
             if ($postId) {
-                // Get mediaChannel info from post meta (stored during sync)
                 $mediaChannelName = get_post_meta($postId, 'simpleview_media_channel_name', true);
                 $mediaChannelId = get_post_meta($postId, 'simpleview_media_channel_id', true);
 
-                // Fallback: reconstruct name from post type slug if meta not found
                 if (empty($mediaChannelName)) {
                     $mediaChannelName = str_replace('sv_', '', $postTypeSlug);
                     $mediaChannelName = str_replace('_', ' ', $mediaChannelName);
@@ -299,16 +283,40 @@ class App
         return !empty($taxonomies) && is_tax($taxonomies);
     }
 
+
     /**
-     * Handle plugin deactivation
+     * Decorate post object with Simpleview event data
      * 
-     * Note: We don't delete posts or terms, just clean up tracking
-     * 
-     * @return void
+     * @param object $postObject The post object to decorate
+     * @return object The decorated post object
      */
-    public function onDeactivation(): void
+    public function decoratePostObject($postObject): object
     {
-        // Optionally clean up registered post types tracking
-        // We keep it so post types can be re-registered on reactivation
+        if (!is_object($postObject) || !method_exists($postObject, 'getPostType') || !method_exists($postObject, 'getId')) {
+            return $postObject;
+        }
+
+        $postType = $postObject->getPostType();
+        $dynamicPostTypes = $this->getRegisteredSimpleviewPostTypes();
+
+        if (empty($dynamicPostTypes) || !in_array($postType, $dynamicPostTypes, true)) {
+            return $postObject;
+        }
+
+        $postId = $postObject->getId();
+        $wpPost = get_post($postId);
+
+        if (!$wpPost || $wpPost->post_type !== $postType) {
+            return $postObject;
+        }
+
+        $decoratedPost = (new ApplySimpleviewEventData())->apply($wpPost);
+
+        // PostObjectInterface supports dynamic properties via __get/__set
+        if (isset($decoratedPost->simpleviewEventData)) {
+            $postObject->simpleviewEventData = $decoratedPost->simpleviewEventData;
+        }
+
+        return $postObject;
     }
 }

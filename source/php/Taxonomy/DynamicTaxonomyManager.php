@@ -24,9 +24,6 @@ class DynamicTaxonomyManager
 
         // Always register - WordPress handles duplicate registrations gracefully
         // Taxonomies must be registered on every init to appear in admin
-        // The check for existing taxonomy is removed because:
-        // 1. Taxonomies must be registered on every init to appear in admin menu
-        // 2. WordPress safely handles re-registration of existing taxonomies
 
         $labels = [
             'name'                       => sprintf(__('%s Categories', 'modularity-simpleview-events'), $mediaChannelName),

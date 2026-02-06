@@ -2,7 +2,23 @@
 
 @section('loop')
     @if (!empty($post))
-
+        @if (!empty($post->simpleviewEventData))
+            {{-- Card used only for image + date badge (no link, no heading, no content) --}}
+            @card([
+                'link' => false,
+                'image' => $post->simpleviewEventData->imageHero ?? $post->simpleviewEventData->image ?? null,
+                'date' => $post->simpleviewEventData->date ?? null,
+                'dateBadge' => !empty($post->simpleviewEventData->dateBadge),
+                'heading' => '',
+                'classList' => ['c-simpleview-event-single__hero', 'c-simpleview-event-card'],
+                'context' => ['single', 'single.hero'],
+                'containerAware' => true,
+                'attributeList' => [
+                    'aria-label' => $post->simpleviewEventData->ariaLabel ?? ''
+                ]
+            ])
+            @endcard
+        @endif
         @element([
             'componentElement' => 'article',
             'id' => 'article',
