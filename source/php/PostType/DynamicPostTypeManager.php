@@ -2,6 +2,8 @@
 
 namespace ModularitySimpleviewEvents\PostType;
 
+use ModularitySimpleviewEvents\Customizer\ArchiveDefaultsApplicator;
+
 /**
  * Class DynamicPostTypeManager
  * 
@@ -75,6 +77,8 @@ class DynamicPostTypeManager
 
         register_post_type($postTypeSlug, $args);
         $this->trackPostType($postTypeSlug, $mediaChannelName, $mediaChannelId);
+
+        (new ArchiveDefaultsApplicator())->applyDefaults($postTypeSlug);
 
         return $postTypeSlug;
     }
