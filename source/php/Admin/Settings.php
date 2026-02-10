@@ -225,31 +225,31 @@ class Settings
                             .then(function(data) {
                                 if (data.success) {
                                     var message = data.data?.message || '<?php echo esc_js(__('Sync completed successfully', 'modularity-simpleview-events')); ?>';
-                                    
+
                                     // Show detailed statistics if available
                                     if (data.data?.data) {
                                         var stats = data.data.data;
                                         var details = [];
-                                        
+
                                         if (stats.created > 0) details.push(stats.created + ' created');
                                         if (stats.updated > 0) details.push(stats.updated + ' updated');
                                         if (stats.archived > 0) details.push(stats.archived + ' archived');
                                         if (stats.restored > 0) details.push(stats.restored + ' restored');
                                         if (stats.pruned > 0) details.push(stats.pruned + ' pruned');
-                                        
+
                                         if (details.length > 0) {
                                             message += '\n\n' + details.join(', ');
                                         }
-                                        
+
                                         if (stats.warnings && stats.warnings.length > 0) {
                                             message += '\n\nWarnings:\n' + stats.warnings.join('\n');
                                         }
-                                        
+
                                         if (stats.errors && stats.errors.length > 0) {
                                             message += '\n\nErrors: ' + stats.errors.length;
                                         }
                                     }
-                                    
+
                                     alert(message);
                                 } else {
                                     alert('<?php echo esc_js(__('Sync failed:', 'modularity-simpleview-events')); ?> ' + (data.data?.message || 'Unknown error'));

@@ -34,6 +34,7 @@ class App
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
         add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
         add_filter('/Modularity/externalViewPath', [$this, 'addPostsModuleViewPath']);
+        add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
     }
@@ -53,6 +54,16 @@ class App
         return $paths;
     }
 
+    public function addComponentLibraryViewPaths(array $paths): array
+    {
+
+        $ourPath = rtrim(MODULARITYSIMPLEVIEWEVENTS_PATH . 'views', DIRECTORY_SEPARATOR);
+        if (is_dir($ourPath)) {
+            array_unshift($paths, $ourPath . DIRECTORY_SEPARATOR);
+        }
+        return $paths;
+    }
+
     /**
      * Add our view path to the Posts module view paths
      *
@@ -66,7 +77,6 @@ class App
                 ? MODULARITY_PATH . 'source/php/Module/Posts/views'
                 : '';
 
-            // Return array with our path last (will be prepended last = checked first)
             $externalViewPaths['mod-posts'] = [
                 $postsModuleViewPath,
                 MODULARITYSIMPLEVIEWEVENTS_PATH . 'views',
@@ -106,9 +116,6 @@ class App
     /**
      * Register dynamic post types that were created during sync
      * 
-     * This ensures post types are available even if sync hasn't run yet.
-     * Post types MUST be registered on every init hook to appear in admin menu.
-     * 
      * @return void
      */
     public function registerDynamicPostTypes(): void
@@ -141,8 +148,6 @@ class App
     /**
      * Register dynamic taxonomies that were created during sync
      * 
-     * Taxonomies must be registered on every init hook to appear in admin.
-     * 
      * @return void
      */
     public function registerDynamicTaxonomies(): void
@@ -151,7 +156,6 @@ class App
         $registered = get_option('simpleview_events_registered_post_types', []);
 
         foreach ($registered as $postTypeSlug => $info) {
-            // Always register taxonomy - WordPress handles duplicates gracefully
             $taxonomyManager->registerCategoryTaxonomyForPostType(
                 $postTypeSlug,
                 $info['name'] ?? ''
@@ -261,8 +265,6 @@ class App
             return false;
         }
 
-        // More robust than conditional tags alone: check queried vars.
-        // This helps ensure our view path is registered early enough for PostsList rendering.
         $queriedPostType = get_query_var('post_type');
         if (is_string($queriedPostType) && in_array($queriedPostType, $postTypes, true)) {
             return true;

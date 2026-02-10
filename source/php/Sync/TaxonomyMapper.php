@@ -27,7 +27,6 @@ class TaxonomyMapper
         $categories = [];
         $uniqueCategories = [];
 
-        // Extract unique categories from all products
         foreach ($products as $product) {
             $categoryData = $this->extractCategoriesFromProduct($product);
 
@@ -36,7 +35,6 @@ class TaxonomyMapper
                 $categoryName = $category['name'] ?? '';
 
                 if (!empty($categoryId) && !empty($categoryName)) {
-                    // Use category ID as key to ensure uniqueness
                     if (!isset($uniqueCategories[$categoryId])) {
                         $uniqueCategories[$categoryId] = $categoryName;
                     }
@@ -44,13 +42,12 @@ class TaxonomyMapper
             }
         }
 
-        // Create/update terms for each unique category
         foreach ($uniqueCategories as $categoryId => $categoryName) {
             $termId = $this->createOrUpdateTerm(
                 $taxonomySlug,
                 $categoryName,
                 ['simpleview_id' => $categoryId],
-                0 // Categories are flat (no hierarchy)
+                0
             );
 
             if ($termId > 0) {
@@ -74,36 +71,19 @@ class TaxonomyMapper
     {
         $categories = [];
 
-        // Navigate: categoryList -> category -> categorySubType1List -> categorySubType1
-        if (!isset($product['categoryList']['category'])) {
+        if (!isset($product['categoryList']['category']['categorySubType1List']['categorySubType1'])) {
             return $categories;
         }
 
-        $category = $product['categoryList']['category'];
+        $subType1 = $product['categoryList']['category']['categorySubType1List']['categorySubType1'];
+        $subTypes = isset($subType1[0]) ? $subType1 : [$subType1];
 
-        // Handle both single object and array
-        if (isset($category['categorySubType1List']['categorySubType1'])) {
-            $subType1 = $category['categorySubType1List']['categorySubType1'];
-
-            // Handle both single object and array
-            if (isset($subType1[0])) {
-                // Array of categorySubType1
-                foreach ($subType1 as $subType) {
-                    if (isset($subType['@id']) && isset($subType['name'])) {
-                        $categories[] = [
-                            'id' => (string) $subType['@id'],
-                            'name' => $subType['name'],
-                        ];
-                    }
-                }
-            } else {
-                // Single categorySubType1 object
-                if (isset($subType1['@id']) && isset($subType1['name'])) {
-                    $categories[] = [
-                        'id' => (string) $subType1['@id'],
-                        'name' => $subType1['name'],
-                    ];
-                }
+        foreach ($subTypes as $subType) {
+            if (isset($subType['@id'], $subType['name'])) {
+                $categories[] = [
+                    'id' => (string) $subType['@id'],
+                    'name' => $subType['name'],
+                ];
             }
         }
 
@@ -121,7 +101,6 @@ class TaxonomyMapper
      */
     private function createOrUpdateTerm(string $taxonomy, string $name, array $meta = [], int $parent = 0): int
     {
-        // Check if term exists by simpleview_id meta
         $simpleviewId = $meta['simpleview_id'] ?? null;
         $existingTerm = null;
 
@@ -143,21 +122,13 @@ class TaxonomyMapper
             }
         }
 
-        // If not found by meta, try by name and parent (to avoid duplicates with same name but different parents)
         if (!$existingTerm) {
             $args = [
                 'taxonomy' => $taxonomy,
                 'name' => $name,
                 'hide_empty' => false,
+                'parent' => $parent,
             ];
-
-            // If parent is specified, also check parent to ensure we get the right term
-            if ($parent > 0) {
-                $args['parent'] = $parent;
-            } else {
-                // For top-level terms, explicitly check parent is 0
-                $args['parent'] = 0;
-            }
 
             $terms = get_terms($args);
 
@@ -167,14 +138,12 @@ class TaxonomyMapper
         }
 
         if ($existingTerm) {
-            // Update existing term
             $termId = $existingTerm->term_id;
             wp_update_term($termId, $taxonomy, [
                 'name' => $name,
                 'parent' => $parent,
             ]);
         } else {
-            // Create new term
             $result = wp_insert_term($name, $taxonomy, [
                 'parent' => $parent,
             ]);
@@ -187,7 +156,6 @@ class TaxonomyMapper
             $termId = $result['term_id'];
         }
 
-        // Set meta fields
         foreach ($meta as $key => $value) {
             update_term_meta($termId, $key, $value);
         }

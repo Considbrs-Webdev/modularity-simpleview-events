@@ -25,14 +25,6 @@ class DynamicPostTypeManager
         $postTypeSlug = $this->getPostTypeSlug($mediaChannelName);
         $cleanPostTypeSlug = $this->cleanPostTypeSlug($postTypeSlug);
 
-        // Always register - WordPress handles duplicate registrations gracefully
-        // This ensures post types appear in admin menu on every page load
-        // The check for existing post type is removed because:
-        // 1. Post types must be registered on every init to appear in admin menu
-        // 2. WordPress safely handles re-registration of existing post types
-        // 3. During sync (AJAX), post types are registered, but they need to be
-        //    re-registered on admin page load to appear in the sidebar
-
         $labels = [
             'name'                  => $mediaChannelName,
             'singular_name'         => $mediaChannelName,
@@ -82,8 +74,6 @@ class DynamicPostTypeManager
         ];
 
         register_post_type($postTypeSlug, $args);
-
-        // Track this post type (update tracking even if already registered)
         $this->trackPostType($postTypeSlug, $mediaChannelName, $mediaChannelId);
 
         return $postTypeSlug;
@@ -97,7 +87,6 @@ class DynamicPostTypeManager
      */
     public function getPostTypeSlug(string $mediaChannelName): string
     {
-        // Sanitize: lowercase, replace spaces/special chars with underscores, prefix with sv_
         $slug = sanitize_title($mediaChannelName);
         $slug = str_replace('-', '_', $slug);
         return 'sv_' . $slug;
@@ -165,16 +154,15 @@ class DynamicPostTypeManager
     /**
      * Clean up post types that are no longer in use
      * 
-     * @param array $activeMediaChannels Array of active mediaChannel IDs
+     * @param array $activePostTypeSlugs Array of active post type slugs
      * @return void
      */
-    public function cleanupUnusedPostTypes(array $activeMediaChannels): void
+    public function cleanupUnusedPostTypes(array $activePostTypeSlugs): void
     {
         $registered = get_option(self::OPTION_KEY, []);
 
         foreach ($registered as $postTypeSlug => $info) {
-            $mediaChannelId = $info['id'] ?? '';
-            if (!in_array($mediaChannelId, $activeMediaChannels, true)) {
+            if (!in_array($postTypeSlug, $activePostTypeSlugs, true)) {
                 $this->unregisterPostType($postTypeSlug);
             }
         }

@@ -3,48 +3,6 @@
     "title": "Simpleview Events Settings",
     "fields": [
         {
-            "key": "field_simpleview_events_display_name",
-            "label": "Display Name",
-            "name": "display_name",
-            "aria-label": "",
-            "type": "text",
-            "instructions": "The name shown on the frontend (archive title, breadcrumbs). Leave empty to use the default 'Simpleview Events'.",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "default_value": "",
-            "maxlength": "",
-            "allow_in_bindings": 0,
-            "placeholder": "Simpleview Events",
-            "prepend": "",
-            "append": ""
-        },
-        {
-            "key": "field_simpleview_events_slug",
-            "label": "Slug",
-            "name": "slug",
-            "aria-label": "",
-            "type": "text",
-            "instructions": "The URL slug for the archive and posts. Auto-generated from Display Name, but can be customized. Don't forget to flush permalinks after changing (Settings > Permalinks > Save).",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "default_value": "",
-            "maxlength": "",
-            "allow_in_bindings": 0,
-            "placeholder": "simpleview-event",
-            "prepend": "",
-            "append": ""
-        },
-        {
             "key": "field_simpleview_events_api_base_url",
             "label": "API Base URL",
             "name": "api_base_url",
@@ -59,14 +17,14 @@
                 "id": ""
             },
             "default_value": "",
-            "placeholder": "https://api.simpleview.com"
+            "placeholder": "https:\/\/api.simpleview.com"
         },
         {
             "key": "field_simpleview_events_api_key",
             "label": "API Key",
             "name": "api_key",
             "aria-label": "",
-            "type": "text",
+            "type": "password",
             "instructions": "The API key for authenticating with Simpleview API.",
             "required": 1,
             "conditional_logic": 0,
@@ -76,7 +34,9 @@
                 "id": ""
             },
             "default_value": "",
-            "placeholder": ""
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
         },
         {
             "key": "field_simpleview_events_sync_frequency",
@@ -103,12 +63,58 @@
             "ui": 0,
             "return_format": "value",
             "ajax": 0,
-            "placeholder": ""
+            "placeholder": "",
+            "create_options": 0,
+            "save_options": 0,
+            "allow_custom": 0,
+            "search_placeholder": ""
+        },
+        {
+            "key": "field_simpleview_events_use_mock_data",
+            "label": "Use Mock Data",
+            "name": "use_mock_data",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "Use local mock JSON file instead of API. Enable this to test with mock data before switching to the live API.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "",
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "",
+            "ui_off_text": ""
+        },
+        {
+            "key": "field_simpleview_events_archive_retention_days",
+            "label": "Archive Retention Days",
+            "name": "archive_retention_days",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "Number of days to keep archived posts before permanent deletion. Posts removed from the API will be archived, then deleted after this period.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 30,
+            "min": 1,
+            "max": 365,
+            "placeholder": "",
+            "step": 1,
+            "prepend": "",
+            "append": "days"
         },
         {
             "key": "field_simpleview_events_manual_sync",
             "label": "Manual Sync",
-            "name": "manual_sync",
+            "name": "",
             "aria-label": "",
             "type": "message",
             "instructions": "",
@@ -119,7 +125,7 @@
                 "class": "",
                 "id": ""
             },
-            "message": "<button type=\"button\" id=\"simpleview-events-manual-sync\" class=\"button button-primary\">Sync Now</button>",
+            "message": "<button type=\"button\" id=\"simpleview-events-manual-sync\" class=\"button button-primary\">Sync Now<\/button>",
             "new_lines": "wpautop",
             "esc_html": 0
         }
@@ -150,3 +156,4 @@
     "acfe_meta": "",
     "acfe_note": ""
 }]
+

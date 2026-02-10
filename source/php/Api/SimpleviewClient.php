@@ -16,7 +16,7 @@ class SimpleviewClient
     private int $timeout;
 
     /**
-     *  Static parameters for the Simpleview API (without LicenseKey which is set at runtime)
+     *  Static parameters for the Simpleview API (without LicenceKey which is set at runtime)
      * 
      * @var array
      */
@@ -25,8 +25,9 @@ class SimpleviewClient
         'LanguageId' => 'sv',
         'DBOwnerIdList' => '143',
         'CountryId' => 'SE',
-        'DistributionChannelId' => '192',
+        'DistributionChannelId' => '634573',
         'json' => 'on',
+        'CategoryIdList' => '',
     ];
 
     /**
@@ -44,14 +45,14 @@ class SimpleviewClient
     }
 
     /**
-     * Get API parameters with LicenseKey set at runtime
+     * Get API parameters with LicenceKey set at runtime
      * 
      * @return array
      */
     private function getParameters(): array
     {
         $parameters = self::$baseParameters;
-        $parameters['LicenseKey'] = $this->apiKey;
+        $parameters['LicenceKey'] = $this->apiKey;
         return $parameters;
     }
 
@@ -68,15 +69,11 @@ class SimpleviewClient
     /**
      * Fetch events from local mock JSON file
      * 
-     * @return array|WP_Error Array of event data or WP_Error on failure
+     * @return array|\WP_Error Array of event data or WP_Error on failure
      */
     private function fetchFromMockFile(): array|\WP_Error
     {
-        // Prefer the slimmed mock file when present (faster for development/testing)
-        $slimmedMockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview-slimmed.json';
-        $mockFile = file_exists($slimmedMockFile)
-            ? $slimmedMockFile
-            : (MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json');
+        $mockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json';
 
         if (!file_exists($mockFile)) {
             return new \WP_Error(
@@ -110,16 +107,14 @@ class SimpleviewClient
      * Fetch events from Simpleview API or mock file
      * 
      * @param array $params Optional query parameters
-     * @return array|WP_Error Array of event data or WP_Error on failure
+     * @return array|\WP_Error Array of event data or WP_Error on failure
      */
     public function fetchEvents(array $params = []): array|\WP_Error
     {
-        // Check for mock mode first
         if ($this->isMockMode()) {
             return $this->fetchFromMockFile();
         }
 
-        // Validate API credentials for live mode
         if (empty($this->baseUrl) || empty($this->apiKey)) {
             return new \WP_Error(
                 'missing_credentials',
@@ -128,11 +123,8 @@ class SimpleviewClient
         }
 
         $endpoint = $this->baseUrl;
-
-        // Merge default parameters with provided params
         $queryParams = array_merge($this->getParameters(), $params);
 
-        // Add query parameters
         if (!empty($queryParams)) {
             $endpoint .= '?' . http_build_query($queryParams);
         }
@@ -140,8 +132,7 @@ class SimpleviewClient
         $response = wp_remote_get($endpoint, [
             'timeout' => $this->timeout,
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
             ],
         ]);
 
@@ -174,11 +165,10 @@ class SimpleviewClient
     /**
      * Test API connection
      * 
-     * @return bool|WP_Error True if connection successful, WP_Error otherwise
+     * @return bool|\WP_Error True if connection successful, WP_Error otherwise
      */
     public function testConnection(): bool|\WP_Error
     {
-        // Mock mode always succeeds if file exists
         if ($this->isMockMode()) {
             $mockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json';
             if (!file_exists($mockFile)) {
@@ -190,7 +180,6 @@ class SimpleviewClient
             return true;
         }
 
-        // Validate API credentials for live mode
         if (empty($this->baseUrl) || empty($this->apiKey)) {
             return new \WP_Error(
                 'missing_credentials',
@@ -198,7 +187,6 @@ class SimpleviewClient
             );
         }
 
-        // Try a simple request to verify credentials
         $result = $this->fetchEvents($this->getParameters());
 
         if (is_wp_error($result)) {
@@ -235,15 +223,10 @@ class SimpleviewClient
      */
     public function isConfigured(): bool
     {
-        // Mock mode doesn't need credentials
         if ($this->isMockMode()) {
             return true;
         }
 
-        if (!empty($this->baseUrl) && !empty($this->apiKey)) {
-            return true;
-        }
-
-        return false;
+        return !empty($this->baseUrl) && !empty($this->apiKey);
     }
 }

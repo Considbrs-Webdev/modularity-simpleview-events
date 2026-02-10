@@ -22,9 +22,6 @@ class DynamicTaxonomyManager
     {
         $taxonomySlug = $this->getTaxonomySlug($postTypeSlug);
 
-        // Always register - WordPress handles duplicate registrations gracefully
-        // Taxonomies must be registered on every init to appear in admin
-
         $labels = [
             'name'                       => sprintf(__('%s Categories', 'modularity-simpleview-events'), $mediaChannelName),
             'singular_name'              => sprintf(__('%s Category', 'modularity-simpleview-events'), $mediaChannelName),

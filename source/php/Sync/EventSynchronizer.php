@@ -5,6 +5,7 @@ namespace ModularitySimpleviewEvents\Sync;
 use ModularitySimpleviewEvents\Api\SimpleviewClient;
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
 use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
+use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
 
 /**
  * Class EventSynchronizer
@@ -60,7 +61,8 @@ class EventSynchronizer
      */
     public function sync(): array|\WP_Error
     {
-        // Check if API is configured
+        $this->ensureArchivedStatusRegistered();
+
         if (!$this->client->isConfigured()) {
             return new \WP_Error(
                 'not_configured',
@@ -68,7 +70,6 @@ class EventSynchronizer
             );
         }
 
-        // Fetch products from API
         $apiResponse = $this->client->fetchEvents();
 
         if (is_wp_error($apiResponse)) {
@@ -76,7 +77,6 @@ class EventSynchronizer
             return $apiResponse;
         }
 
-        // Validate API response before proceeding
         $validation = $this->validator->validate($apiResponse);
         
         if (!$validation['valid']) {
@@ -88,7 +88,6 @@ class EventSynchronizer
             );
         }
 
-        // Extract products from API response
         $products = $this->extractProductsFromResponse($apiResponse);
 
         if (empty($products)) {
@@ -98,13 +97,9 @@ class EventSynchronizer
             );
         }
 
-        // Group products by mediaChannel
         $groupedProducts = $this->groupProductsByMediaChannel($products);
+        $activePostTypeSlugs = array_keys($groupedProducts);
 
-        // Track active mediaChannels for cleanup
-        $activeMediaChannelIds = array_keys($groupedProducts);
-
-        // Sync each mediaChannel
         $results = [
             'created' => 0,
             'updated' => 0,
@@ -113,54 +108,51 @@ class EventSynchronizer
             'pruned' => 0,
             'errors' => [],
             'warnings' => $validation['warnings'] ?? [],
-            'media_channels' => [],
+            'post_types' => [],
         ];
 
-        // Get retention days from settings (default 30)
         $retentionDays = (int) get_field('archive_retention_days', 'option') ?: 30;
 
-        foreach ($groupedProducts as $mediaChannelId => $mediaChannelData) {
-            $mediaChannelName = $mediaChannelData['name'];
-            $mediaChannelProducts = $mediaChannelData['products'];
+        foreach ($groupedProducts as $postTypeSlug => $postTypeData) {
+            $mediaChannelName = $postTypeData['name'];
+            $mediaChannelIds = $postTypeData['ids'];
+            $postTypeProducts = $postTypeData['products'];
+            $primaryMediaChannelId = $mediaChannelIds[0] ?? '';
 
-            $mediaChannelResult = $this->syncMediaChannel($mediaChannelProducts, $mediaChannelName, $mediaChannelId, $retentionDays);
+            $postTypeResult = $this->syncMediaChannel($postTypeProducts, $mediaChannelName, $primaryMediaChannelId, $retentionDays);
 
-            $results['created'] += $mediaChannelResult['created'];
-            $results['updated'] += $mediaChannelResult['updated'];
-            $results['archived'] += $mediaChannelResult['archived'];
-            $results['restored'] += $mediaChannelResult['restored'];
-            $results['pruned'] += $mediaChannelResult['pruned'];
-            $results['errors'] = array_merge($results['errors'], $mediaChannelResult['errors']);
-            $results['media_channels'][$mediaChannelId] = [
+            $results['created'] += $postTypeResult['created'];
+            $results['updated'] += $postTypeResult['updated'];
+            $results['archived'] += $postTypeResult['archived'];
+            $results['restored'] += $postTypeResult['restored'];
+            $results['pruned'] += $postTypeResult['pruned'];
+            $results['errors'] = array_merge($results['errors'], $postTypeResult['errors']);
+            $results['post_types'][$postTypeSlug] = [
                 'name' => $mediaChannelName,
-                'created' => $mediaChannelResult['created'],
-                'updated' => $mediaChannelResult['updated'],
-                'archived' => $mediaChannelResult['archived'],
-                'restored' => $mediaChannelResult['restored'],
-                'pruned' => $mediaChannelResult['pruned'],
-                'errors' => count($mediaChannelResult['errors']),
+                'media_channel_ids' => $mediaChannelIds,
+                'created' => $postTypeResult['created'],
+                'updated' => $postTypeResult['updated'],
+                'archived' => $postTypeResult['archived'],
+                'restored' => $postTypeResult['restored'],
+                'pruned' => $postTypeResult['pruned'],
+                'errors' => count($postTypeResult['errors']),
             ];
         }
 
-        // Cleanup unused post types
-        $this->postTypeManager->cleanupUnusedPostTypes($activeMediaChannelIds);
-
-        // Update last sync timestamp
+        $this->postTypeManager->cleanupUnusedPostTypes($activePostTypeSlugs);
         update_option('simpleview_events_last_sync', current_time('mysql'));
 
-        // Log summary
         error_log(sprintf(
-            'Simpleview Events Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d media channels',
+            'Simpleview Events Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d post types',
             $results['created'],
             $results['updated'],
             $results['archived'],
             $results['restored'],
             $results['pruned'],
             count($results['errors']),
-            count($results['media_channels'])
+            count($results['post_types'])
         ));
 
-        // Log warnings if any
         if (!empty($results['warnings'])) {
             foreach ($results['warnings'] as $warning) {
                 error_log('Simpleview Events Sync Warning: ' . $warning);
@@ -180,55 +172,62 @@ class EventSynchronizer
      */
     private function extractProductsFromResponse(array $apiResponse): array
     {
-        $products = [];
-
-        if (isset($apiResponse['productList']['product'])) {
-            $productData = $apiResponse['productList']['product'];
-
-            // Handle both single object and array
-            if (isset($productData[0])) {
-                // Array of products
-                $products = $productData;
-            } else {
-                // Single product object
-                $products = [$productData];
-            }
+        if (!isset($apiResponse['productList']['product'])) {
+            return [];
         }
 
-        return $products;
+        $productData = $apiResponse['productList']['product'];
+
+        return isset($productData[0]) ? $productData : [$productData];
     }
 
     /**
-     * Group products by mediaChannel
+     * Group products by post type slug (derived from mediaChannel name)
      * 
      * Products can belong to multiple mediaChannels, so we create entries for each.
-     * Only includes mediaChannels with typeId === "WEBSITECONTENT"
+     * Only includes mediaChannels with typeId === "WEBSITECONTENT".
+     * Groups by post type slug to ensure all products for the same post type are synced together.
      * 
      * @param array $products Array of product data
-     * @return array Array grouped by mediaChannel ID, each containing name and products
+     * @return array Array grouped by post type slug, each containing name, ids, and products
      */
     private function groupProductsByMediaChannel(array $products): array
     {
         $grouped = [];
 
         foreach ($products as $product) {
-            // Extract mediaChannels from product
             $mediaChannels = $this->extractMediaChannelsFromProduct($product);
 
             foreach ($mediaChannels as $mediaChannel) {
                 $mediaChannelId = $mediaChannel['id'];
                 $mediaChannelName = $mediaChannel['name'];
+                $postTypeSlug = $this->postTypeManager->getPostTypeSlug($mediaChannelName);
 
-                // Initialize if not exists
-                if (!isset($grouped[$mediaChannelId])) {
-                    $grouped[$mediaChannelId] = [
+                if (!isset($grouped[$postTypeSlug])) {
+                    $grouped[$postTypeSlug] = [
                         'name' => $mediaChannelName,
+                        'ids' => [],
                         'products' => [],
                     ];
                 }
 
-                // Add product to this mediaChannel
-                $grouped[$mediaChannelId]['products'][] = $product;
+                if (!in_array($mediaChannelId, $grouped[$postTypeSlug]['ids'])) {
+                    $grouped[$postTypeSlug]['ids'][] = $mediaChannelId;
+                }
+
+                $simpleviewId = $product['@id'] ?? $product['id'] ?? '';
+                $alreadyAdded = false;
+                foreach ($grouped[$postTypeSlug]['products'] as $existingProduct) {
+                    $existingId = $existingProduct['@id'] ?? $existingProduct['id'] ?? '';
+                    if ($existingId === $simpleviewId) {
+                        $alreadyAdded = true;
+                        break;
+                    }
+                }
+                
+                if (!$alreadyAdded) {
+                    $grouped[$postTypeSlug]['products'][] = $product;
+                }
             }
         }
 
@@ -253,29 +252,14 @@ class EventSynchronizer
         }
 
         $mediaChannelData = $product['mediaChannelList']['mediaChannel'];
+        $channels = isset($mediaChannelData[0]) ? $mediaChannelData : [$mediaChannelData];
 
-        // Handle both single object and array
-        if (isset($mediaChannelData[0])) {
-            // Array of mediaChannels
-            foreach ($mediaChannelData as $channel) {
-                if (isset($channel['typeId']) && $channel['typeId'] === 'WEBSITECONTENT') {
-                    if (isset($channel['@id']) && isset($channel['name'])) {
-                        $mediaChannels[] = [
-                            'id' => (string) $channel['@id'],
-                            'name' => $channel['name'],
-                        ];
-                    }
-                }
-            }
-        } else {
-            // Single mediaChannel object
-            if (isset($mediaChannelData['typeId']) && $mediaChannelData['typeId'] === 'WEBSITECONTENT') {
-                if (isset($mediaChannelData['@id']) && isset($mediaChannelData['name'])) {
-                    $mediaChannels[] = [
-                        'id' => (string) $mediaChannelData['@id'],
-                        'name' => $mediaChannelData['name'],
-                    ];
-                }
+        foreach ($channels as $channel) {
+            if (($channel['typeId'] ?? '') === 'WEBSITECONTENT' && isset($channel['@id'], $channel['name'])) {
+                $mediaChannels[] = [
+                    'id' => (string) $channel['@id'],
+                    'name' => $channel['name'],
+                ];
             }
         }
 
@@ -293,20 +277,12 @@ class EventSynchronizer
      */
     private function syncMediaChannel(array $products, string $mediaChannelName, string $mediaChannelId, int $retentionDays): array
     {
-        // Register post type for this mediaChannel
         $postTypeSlug = $this->postTypeManager->registerPostTypeForMediaChannel($mediaChannelName, $mediaChannelId);
-
-        // Register category taxonomy for this post type
         $taxonomySlug = $this->taxonomyManager->registerCategoryTaxonomyForPostType($postTypeSlug, $mediaChannelName);
-
-        // Sync categories from products in this mediaChannel
         $categories = $this->taxonomyMapper->syncCategories($products, $taxonomySlug, $postTypeSlug);
-
-        // Get all existing post IDs for this post type (including archived)
         $existingPostIds = $this->getExistingPostIds($postTypeSlug);
         $syncedPostIds = [];
 
-        // Sync posts
         $results = [
             'created' => 0,
             'updated' => 0,
@@ -319,12 +295,7 @@ class EventSynchronizer
         foreach ($products as $productData) {
             $simpleviewId = $productData['@id'] ?? $productData['id'] ?? '';
             $existingPostId = $this->postMapper->findExistingPost((string) $simpleviewId, $postTypeSlug);
-
-            // Check if post was archived and restore it
-            $wasArchived = false;
-            if ($existingPostId && $this->postArchiver->isArchived($existingPostId)) {
-                $wasArchived = true;
-            }
+            $wasArchived = $existingPostId && $this->postArchiver->isArchived($existingPostId);
 
             $result = $this->postMapper->createOrUpdatePost($productData, $postTypeSlug, $taxonomySlug, $categories, $mediaChannelName, $mediaChannelId);
 
@@ -355,10 +326,8 @@ class EventSynchronizer
             }
         }
 
-        // Archive posts that are not in the synced list
         $postsToArchive = array_diff($existingPostIds, $syncedPostIds);
         foreach ($postsToArchive as $postId) {
-            // Only archive if not already archived
             if (!$this->postArchiver->isArchived($postId)) {
                 if ($this->postArchiver->archivePost($postId)) {
                     $results['archived']++;
@@ -366,7 +335,6 @@ class EventSynchronizer
             }
         }
 
-        // Prune expired archived posts
         $prunedPosts = $this->postArchiver->pruneExpiredArchives($postTypeSlug, $retentionDays);
         $results['pruned'] = count($prunedPosts);
 
@@ -398,6 +366,8 @@ class EventSynchronizer
      */
     public function getStats(): array
     {
+        $this->ensureArchivedStatusRegistered();
+
         $registeredPostTypes = $this->postTypeManager->getAllRegisteredPostTypes();
         $totalEvents = 0;
         $draftEvents = 0;
@@ -417,5 +387,18 @@ class EventSynchronizer
             'post_types' => count($registeredPostTypes),
             'last_sync' => get_option('simpleview_events_last_sync', null),
         ];
+    }
+
+    /**
+     * Ensure the archived post status is registered
+     * 
+     * @return void
+     */
+    private function ensureArchivedStatusRegistered(): void
+    {
+        if (!get_post_status_object('archived')) {
+            $archivedStatus = new ArchivedPostStatus();
+            $archivedStatus->register();
+        }
     }
 }

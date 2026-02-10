@@ -22,7 +22,6 @@ class PostArchiver
      */
     public function archivePost(int $postId): bool
     {
-        // Don't archive if already archived
         if ($this->isArchived($postId)) {
             return true;
         }
@@ -41,7 +40,6 @@ class PostArchiver
             return false;
         }
 
-        // Store archive timestamp
         update_post_meta($postId, self::ARCHIVED_AT_META_KEY, current_time('mysql'));
 
         return true;
@@ -69,7 +67,6 @@ class PostArchiver
             return false;
         }
 
-        // Remove archive timestamp
         delete_post_meta($postId, self::ARCHIVED_AT_META_KEY);
 
         return true;
@@ -110,12 +107,10 @@ class PostArchiver
             $archivedAt = get_post_meta($postId, self::ARCHIVED_AT_META_KEY, true);
 
             if (empty($archivedAt)) {
-                // If no timestamp, assume it's old enough (safety fallback)
                 $archivedAt = date('Y-m-d H:i:s', strtotime('-999 days'));
             }
 
             if ($archivedAt < $cutoffDate) {
-                // Permanently delete
                 $deleted = wp_delete_post($postId, true);
 
                 if ($deleted) {

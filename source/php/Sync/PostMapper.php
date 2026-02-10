@@ -38,39 +38,21 @@ class PostMapper
      */
     public function mapToPost(array $eventData, string $postTypeSlug): array
     {
-        // Extract product ID - can be @id or id
         $simpleviewId = $eventData['@id'] ?? $eventData['id'] ?? '';
-
-        // Extract name/title
         $title = $eventData['name'] ?? __('Untitled Event', 'modularity-simpleview-events');
-
-        // Extract content from textList
         $content = '';
         $excerpt = '';
 
         if (isset($eventData['textList']['text'])) {
             $texts = $eventData['textList']['text'];
+            $textItems = isset($texts[0]) ? $texts : [$texts];
 
-            // Handle both single object and array
-            if (isset($texts[0])) {
-                // Array of texts
-                foreach ($texts as $text) {
-                    if (isset($text['@type'])) {
-                        if ($text['@type'] === 'HOVED' || $text['@type'] === 'HOVED_HTML') {
-                            $content = $text['#text'] ?? $text['#text'] ?? '';
-                        } elseif ($text['@type'] === 'INGRESS') {
-                            $excerpt = $text['#text'] ?? $text['#text'] ?? '';
-                        }
-                    }
-                }
-            } else {
-                // Single text object
-                if (isset($texts['@type'])) {
-                    if ($texts['@type'] === 'HOVED' || $texts['@type'] === 'HOVED_HTML') {
-                        $content = $texts['#text'] ?? $texts['#text'] ?? '';
-                    } elseif ($texts['@type'] === 'INGRESS') {
-                        $excerpt = $texts['#text'] ?? $texts['#text'] ?? '';
-                    }
+            foreach ($textItems as $text) {
+                $type = $text['@type'] ?? '';
+                if ($type === 'HOVED' || $type === 'HOVED_HTML') {
+                    $content = $text['#text'] ?? '';
+                } elseif ($type === 'INGRESS') {
+                    $excerpt = $text['#text'] ?? '';
                 }
             }
         }
@@ -86,7 +68,6 @@ class PostMapper
             ],
         ];
 
-        // Build additional event meta (e.g. start_date, location) from API payload
         $extraMeta = $this->eventMetaBuilder->buildMeta($eventData);
         if (!empty($extraMeta)) {
             $post['meta_input'] = array_merge($post['meta_input'], $extraMeta);
@@ -112,10 +93,8 @@ class PostMapper
             $taxonomySlug => [],
         ];
 
-        // Extract categories from product's categoryList
         $productCategories = $this->taxonomyMapper->extractCategoriesFromProduct($eventData);
 
-        // Map to synced taxonomy terms
         foreach ($productCategories as $productCategory) {
             $categoryId = $productCategory['id'] ?? '';
             if (!empty($categoryId) && isset($categories[$categoryId])) {
@@ -160,7 +139,6 @@ class PostMapper
      */
     public function createOrUpdatePost(array $eventData, string $postTypeSlug, string $taxonomySlug, array $categories, ?string $mediaChannelName = null, ?string $mediaChannelId = null): int|\WP_Error
     {
-        // Extract Simpleview ID
         $simpleviewId = $eventData['@id'] ?? $eventData['id'] ?? '';
 
         if (empty($simpleviewId)) {
@@ -170,21 +148,15 @@ class PostMapper
             );
         }
 
-        // Check if post already exists
         $existingPostId = $this->findExistingPost((string) $simpleviewId, $postTypeSlug);
 
-        // If post exists and is archived, restore it first
         if ($existingPostId && $this->postArchiver->isArchived($existingPostId)) {
             $this->postArchiver->restorePost($existingPostId);
         }
 
-        // Map event data to post array
         $postData = $this->mapToPost($eventData, $postTypeSlug);
-
-        // Ensure status is publish (in case it was archived)
         $postData['post_status'] = 'publish';
 
-        // Add mediaChannel info to post meta if provided
         if ($mediaChannelName) {
             $postData['meta_input']['simpleview_media_channel_name'] = $mediaChannelName;
         }
@@ -192,15 +164,12 @@ class PostMapper
             $postData['meta_input']['simpleview_media_channel_id'] = $mediaChannelId;
         }
 
-        // Get taxonomy terms
         $taxonomyTerms = $this->getTaxonomyTerms($eventData, $taxonomySlug, $categories);
 
         if ($existingPostId) {
-            // Update existing post
             $postData['ID'] = $existingPostId;
             $postId = wp_update_post($postData, true);
         } else {
-            // Create new post
             $postId = wp_insert_post($postData, true);
         }
 
@@ -208,7 +177,6 @@ class PostMapper
             return $postId;
         }
 
-        // Set taxonomy terms
         foreach ($taxonomyTerms as $taxonomy => $termIds) {
             if (!empty($termIds)) {
                 wp_set_object_terms($postId, $termIds, $taxonomy);

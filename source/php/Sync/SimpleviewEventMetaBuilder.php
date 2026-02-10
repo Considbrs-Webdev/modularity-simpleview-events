@@ -36,20 +36,18 @@ class SimpleviewEventMetaBuilder
         $earliestSchedule = $this->pickEarliestSchedule($normalizedSchedules);
         $startDate = $earliestSchedule ? $this->computeStartDateFromSchedule($earliestSchedule) : null;
         if ($startDate !== null) {
-            $meta['start_date'] = $startDate; // Municipio-compatible key/format
+            $meta['start_date'] = $startDate;
         } else {
-            // Do not block sync; just log a warning for diagnostics.
             error_log(sprintf(
                 'Simpleview Events: Could not compute start_date for product %s',
                 (string) ($product['@id'] ?? $product['id'] ?? 'unknown')
             ));
         }
 
-        // Optional end time: only store if schedule has toTime
         if ($earliestSchedule) {
             $endDate = $this->computeEndDateFromSchedule($earliestSchedule);
             if ($endDate !== null) {
-                $meta['simpleview_event_end_date'] = $endDate; // Y-m-d H:i:s (Europe/Stockholm)
+                $meta['simpleview_event_end_date'] = $endDate;
             }
         }
 
@@ -93,54 +91,6 @@ class SimpleviewEventMetaBuilder
         }
 
         return is_array($schedule) ? [$schedule] : [];
-    }
-
-    /**
-     * Compute earliest overall start date as "Y-m-d H:i:s" in Europe/Stockholm.
-     *
-     * Treat missing time as 00:00:00.
-     *
-     * @param array<int, array<string, mixed>> $schedules
-     */
-    private function computeEarliestStartDate(array $schedules): ?string
-    {
-        $earliest = null;
-        $tz = new \DateTimeZone(self::TIMEZONE);
-
-        foreach ($schedules as $schedule) {
-            if (!is_array($schedule)) {
-                continue;
-            }
-
-            $date = $schedule['fromDate']['@date'] ?? $schedule['fromDate']['#text'] ?? null;
-            if (!is_string($date) || $date === '') {
-                continue;
-            }
-
-            $time =
-                $schedule['day']['fromTime']['@time']
-                ?? $schedule['day']['fromTime']['#text']
-                ?? null;
-
-            // Treat start-only events as having no end time; if time is missing, default to midnight.
-            if (!is_string($time) || $time === '') {
-                $time = '00:00:00';
-            } elseif (preg_match('/^\d{2}:\d{2}$/', $time) === 1) {
-                $time .= ':00';
-            }
-
-            // Safe parse: create from explicit format.
-            $dt = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date . ' ' . $time, $tz);
-            if ($dt === false) {
-                continue;
-            }
-
-            if ($earliest === null || $dt < $earliest) {
-                $earliest = $dt;
-            }
-        }
-
-        return $earliest ? $earliest->format('Y-m-d H:i:s') : null;
     }
 
     /**
@@ -197,7 +147,6 @@ class SimpleviewEventMetaBuilder
 
         $toDate = $schedule['toDate']['@date'] ?? $schedule['toDate']['#text'] ?? null;
         if (!is_string($toDate) || trim($toDate) === '') {
-            // Fallback to fromDate if toDate missing
             $toDate = $schedule['fromDate']['@date'] ?? $schedule['fromDate']['#text'] ?? null;
         }
         if (!is_string($toDate) || trim($toDate) === '') {
@@ -237,58 +186,6 @@ class SimpleviewEventMetaBuilder
         return $dt ?: null;
     }
 
-    /**
-     * Pick location name from the earliest schedule (if present).
-     *
-     * @param array<int, array<string, mixed>> $schedules
-     */
-    private function computeLocationNameForEarliest(array $schedules): ?string
-    {
-        if (empty($schedules)) {
-            return null;
-        }
-
-        $tz = new \DateTimeZone(self::TIMEZONE);
-        $best = null;
-        $bestLocation = null;
-
-        foreach ($schedules as $schedule) {
-            if (!is_array($schedule)) {
-                continue;
-            }
-
-            $date = $schedule['fromDate']['@date'] ?? $schedule['fromDate']['#text'] ?? null;
-            if (!is_string($date) || $date === '') {
-                continue;
-            }
-
-            $time =
-                $schedule['day']['fromTime']['@time']
-                ?? $schedule['day']['fromTime']['#text']
-                ?? '00:00:00';
-
-            if (is_string($time) && preg_match('/^\d{2}:\d{2}$/', $time) === 1) {
-                $time .= ':00';
-            }
-            if (!is_string($time) || $time === '') {
-                $time = '00:00:00';
-            }
-
-            $dt = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $date . ' ' . $time, $tz);
-            if ($dt === false) {
-                continue;
-            }
-
-            if ($best === null || $dt < $best) {
-                $best = $dt;
-                $loc = $schedule['location'] ?? null;
-                $bestLocation = is_string($loc) ? trim($loc) : null;
-            }
-        }
-
-        return $bestLocation ?: null;
-    }
-
     private function fallbackLocationFromProduct(array $product): ?string
     {
         $street = $product['address']['street'] ?? null;
@@ -316,13 +213,11 @@ class SimpleviewEventMetaBuilder
             return trim($organiser);
         }
 
-        // Fallback: look for textList entries of type Organizer/Organizer_HTML.
         $texts = $product['textList']['text'] ?? null;
         if (!is_array($texts)) {
             return null;
         }
 
-        // Handle both array and single object
         $items = isset($texts[0]) ? $texts : [$texts];
         foreach ($items as $item) {
             if (!is_array($item)) {
@@ -343,8 +238,6 @@ class SimpleviewEventMetaBuilder
     /**
      * Compute image payload from Simpleview mediaList.
      *
-     * Generate srcset and sizes from the simpleview image variants.
-     *
      * @return array{src?:string,alt?:string,srcset?:string,sizes?:string,variants?:array<string,array{src?:string,width?:int,height?:int}>}
      */
     private function computeImageFromProduct(array $product): array
@@ -354,7 +247,6 @@ class SimpleviewEventMetaBuilder
             return [];
         }
 
-        // Normalize to list
         $items = [];
         if (is_array($media) && isset($media[0])) {
             $items = array_values(array_filter($media, 'is_array'));
@@ -366,7 +258,6 @@ class SimpleviewEventMetaBuilder
             return [];
         }
 
-        // Prefer @sequence === "1" when present, otherwise first item
         $selected = $items[0];
         foreach ($items as $item) {
             $seq = $item['@sequence'] ?? null;
@@ -399,7 +290,6 @@ class SimpleviewEventMetaBuilder
             return [];
         }
 
-        // Pick default src (prefer large > small > thumbnail)
         $src =
             ($variants['large']['src'] ?? null)
             ?? ($variants['small']['src'] ?? null)
@@ -408,7 +298,6 @@ class SimpleviewEventMetaBuilder
         $alt = $selected['description'] ?? ($product['name'] ?? null);
         $alt = is_string($alt) ? trim($alt) : null;
 
-        // Build srcset sorted by width
         $srcsetParts = [];
         $sortable = [];
         foreach ($variants as $v) {
@@ -429,7 +318,6 @@ class SimpleviewEventMetaBuilder
 
         if (!empty($srcsetParts)) {
             $image['srcset'] = implode(', ', $srcsetParts);
-            // Reasonable default; theme/card may override
             $image['sizes'] = '(max-width: 768px) 100vw, 630px';
         }
 

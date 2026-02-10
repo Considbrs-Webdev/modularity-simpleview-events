@@ -62,14 +62,14 @@ class SimpleviewCommand
         }
 
         \WP_CLI::success(sprintf(
-            'Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d media channels.',
+            'Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d post types.',
             $result['created'] ?? 0,
             $result['updated'] ?? 0,
             $result['archived'] ?? 0,
             $result['restored'] ?? 0,
             $result['pruned'] ?? 0,
             count($result['errors'] ?? []),
-            count($result['media_channels'] ?? [])
+            count($result['post_types'] ?? $result['media_channels'] ?? [])
         ));
 
         if (!empty($result['warnings'] ?? [])) {
@@ -131,6 +131,156 @@ class SimpleviewCommand
     }
 
     /**
+     * Test API connection and show debug info
+     * 
+     * ## OPTIONS
+     * 
+     * [--raw]
+     * : Show raw API response (first 2000 chars)
+     * 
+     * [--full]
+     * : Show full raw API response
+     * 
+     * ## EXAMPLES
+     * 
+     *     # Test API connection
+     *     $ wp simpleview-events test
+     * 
+     *     # Show raw response
+     *     $ wp simpleview-events test --raw
+     * 
+     * @param array $args Positional arguments
+     * @param array $assoc_args Associative arguments
+     */
+    public function test(array $args, array $assoc_args): void
+    {
+        $showRaw = isset($assoc_args['raw']) && $assoc_args['raw'];
+        $showFull = isset($assoc_args['full']) && $assoc_args['full'];
+
+        $client = new \ModularitySimpleviewEvents\Api\SimpleviewClient();
+
+        \WP_CLI::line('=== Simpleview API Debug ===');
+        \WP_CLI::line('');
+
+        // Show configuration
+        $baseUrl = $client->getBaseUrl();
+        $isMockMode = (bool) get_field('use_mock_data', 'simpleview-events-settings');
+        $apiKey = get_field('api_key', 'simpleview-events-settings');
+
+        \WP_CLI::line('Configuration:');
+        \WP_CLI::line('  Base URL: ' . ($baseUrl ?: '(not set)'));
+        \WP_CLI::line('  API Key: ' . ($apiKey ? substr($apiKey, 0, 8) . '...' : '(not set)'));
+        \WP_CLI::line('  Mock Mode: ' . ($isMockMode ? 'ENABLED' : 'disabled'));
+        \WP_CLI::line('  Is Configured: ' . ($client->isConfigured() ? 'Yes' : 'No'));
+        \WP_CLI::line('');
+
+        if (!$client->isConfigured()) {
+            \WP_CLI::error('API is not configured. Please set Base URL and API Key in Settings > Simpleview Events.');
+        }
+
+        \WP_CLI::log('Testing API connection...');
+        
+        $result = $client->fetchEvents();
+
+        if (is_wp_error($result)) {
+            \WP_CLI::error('API request failed: ' . $result->get_error_message());
+        }
+
+        \WP_CLI::success('API connection successful!');
+        \WP_CLI::line('');
+
+        // Show response structure
+        \WP_CLI::line('Response Structure:');
+        \WP_CLI::line('  Type: ' . gettype($result));
+        \WP_CLI::line('  Top-level keys: ' . implode(', ', array_keys($result)));
+
+        if (isset($result['productList'])) {
+            $productList = $result['productList'];
+            \WP_CLI::line('  productList keys: ' . implode(', ', array_keys($productList)));
+
+            if (isset($productList['product'])) {
+                $products = $productList['product'];
+                if (is_array($products)) {
+                    // Check if it's a single product (associative) or array of products
+                    $isSingleProduct = isset($products['@id']);
+                    $productCount = $isSingleProduct ? 1 : count($products);
+                    \WP_CLI::line('  Product count: ' . $productCount);
+
+                    // Show first product structure
+                    $firstProduct = $isSingleProduct ? $products : ($products[0] ?? null);
+                    if ($firstProduct) {
+                        \WP_CLI::line('');
+                        \WP_CLI::line('First Product Structure:');
+                        \WP_CLI::line('  Keys: ' . implode(', ', array_keys($firstProduct)));
+                        \WP_CLI::line('  @id: ' . ($firstProduct['@id'] ?? 'N/A'));
+                        \WP_CLI::line('  name: ' . ($firstProduct['name'] ?? 'N/A'));
+
+                        // Show mediaChannelList structure
+                        if (isset($firstProduct['mediaChannelList'])) {
+                            $mediaChannelList = $firstProduct['mediaChannelList'];
+                            \WP_CLI::line('  mediaChannelList keys: ' . implode(', ', array_keys($mediaChannelList)));
+                            
+                            if (isset($mediaChannelList['mediaChannel'])) {
+                                $mc = $mediaChannelList['mediaChannel'];
+                                if (isset($mc['@id'])) {
+                                    // Single mediaChannel
+                                    \WP_CLI::line('    mediaChannel: @id=' . $mc['@id'] . ', name=' . ($mc['name'] ?? 'N/A') . ', typeId=' . ($mc['typeId'] ?? 'N/A'));
+                                } else {
+                                    // Array of mediaChannels
+                                    \WP_CLI::line('    mediaChannel count: ' . count($mc));
+                                    foreach (array_slice($mc, 0, 3) as $channel) {
+                                        \WP_CLI::line('      - @id=' . ($channel['@id'] ?? 'N/A') . ', name=' . ($channel['name'] ?? 'N/A') . ', typeId=' . ($channel['typeId'] ?? 'N/A'));
+                                    }
+                                }
+                            }
+                        }
+
+                        // Show categoryList structure
+                        if (isset($firstProduct['categoryList'])) {
+                            \WP_CLI::line('  categoryList: present');
+                        }
+                    }
+
+                    // Count products per mediaChannel
+                    \WP_CLI::line('');
+                    \WP_CLI::line('MediaChannel Distribution:');
+                    $mediaChannelCounts = [];
+                    $allProducts = $isSingleProduct ? [$products] : $products;
+                    
+                    foreach ($allProducts as $prod) {
+                        if (!isset($prod['mediaChannelList']['mediaChannel'])) continue;
+                        
+                        $mcData = $prod['mediaChannelList']['mediaChannel'];
+                        $channels = isset($mcData['@id']) ? [$mcData] : $mcData;
+                        
+                        foreach ($channels as $ch) {
+                            if (($ch['typeId'] ?? '') !== 'WEBSITECONTENT') continue;
+                            $key = ($ch['@id'] ?? '?') . ': ' . ($ch['name'] ?? '?');
+                            $mediaChannelCounts[$key] = ($mediaChannelCounts[$key] ?? 0) + 1;
+                        }
+                    }
+                    
+                    foreach ($mediaChannelCounts as $mc => $count) {
+                        \WP_CLI::line("  $mc => $count products");
+                    }
+                }
+            }
+        }
+
+        // Show raw response if requested
+        if ($showRaw || $showFull) {
+            \WP_CLI::line('');
+            \WP_CLI::line('=== Raw Response ===');
+            $json = json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            if ($showFull) {
+                \WP_CLI::line($json);
+            } else {
+                \WP_CLI::line(substr($json, 0, 2000) . '...');
+            }
+        }
+    }
+
+    /**
      * Show sync statistics
      * 
      * ## EXAMPLES
@@ -146,62 +296,39 @@ class SimpleviewCommand
         $synchronizer = new EventSynchronizer();
         $stats = $synchronizer->getStats();
 
-        $table = [];
-        $table[] = [
-            'Metric',
-            'Value',
-        ];
-
-        $table[] = [
-            'Total Events',
-            number_format($stats['total_events']),
-        ];
-
-        $table[] = [
-            'Draft Events',
-            number_format($stats['draft_events']),
-        ];
-
-        $table[] = [
-            'Archived Events',
-            number_format($stats['archived_events'] ?? 0),
-        ];
-
-        $table[] = [
-            'Post Types',
-            number_format($stats['post_types']),
-        ];
-
-        $table[] = [
-            'Last Sync',
-            $stats['last_sync'] ?: 'Never',
-        ];
-
-        \WP_CLI\Utils\format_items('table', $table, ['Metric', 'Value']);
+        \WP_CLI::line('=== Simpleview Events Statistics ===');
+        \WP_CLI::line('');
+        \WP_CLI::line('Total Events:    ' . number_format($stats['total_events']));
+        \WP_CLI::line('Draft Events:    ' . number_format($stats['draft_events']));
+        \WP_CLI::line('Archived Events: ' . number_format($stats['archived_events'] ?? 0));
+        \WP_CLI::line('Post Types:      ' . number_format($stats['post_types']));
+        \WP_CLI::line('Last Sync:       ' . ($stats['last_sync'] ?: 'Never'));
 
         // Show post type breakdown if available
         if ($stats['post_types'] > 0) {
             \WP_CLI::line('');
             \WP_CLI::line('Post Type Breakdown:');
 
-            $postTypeManager = new \ModularitySimpleviewEvents\PostType\DynamicPostTypeManager();
             $registeredPostTypes = get_option('simpleview_events_registered_post_types', []);
 
             $postTypeTable = [];
-            $postTypeTable[] = ['Post Type', 'Media Channel', 'Posts'];
 
             foreach ($registeredPostTypes as $postTypeSlug => $info) {
                 $counts = wp_count_posts($postTypeSlug);
-                $totalPosts = ($counts->publish ?? 0) + ($counts->draft ?? 0) + ($counts->archived ?? 0) + ($counts->trash ?? 0);
+                $published = $counts->publish ?? 0;
+                $archived = $counts->archived ?? 0;
+                $draft = $counts->draft ?? 0;
                 
                 $postTypeTable[] = [
-                    $postTypeSlug,
-                    $info['name'] ?? 'Unknown',
-                    number_format($totalPosts) . ' (' . number_format($counts->publish ?? 0) . ' published, ' . number_format($counts->archived ?? 0) . ' archived)',
+                    'post_type' => $postTypeSlug,
+                    'media_channel' => $info['name'] ?? 'Unknown',
+                    'published' => number_format($published),
+                    'archived' => number_format($archived),
+                    'draft' => number_format($draft),
                 ];
             }
 
-            \WP_CLI\Utils\format_items('table', $postTypeTable, ['Post Type', 'Media Channel', 'Posts']);
+            \WP_CLI\Utils\format_items('table', $postTypeTable, ['post_type', 'media_channel', 'published', 'archived', 'draft']);
         }
     }
 }
