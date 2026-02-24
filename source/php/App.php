@@ -37,6 +37,8 @@ class App
         add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
+
+        new TypesenseSearchIntegration();
     }
 
     /**

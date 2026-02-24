@@ -1,0 +1,418 @@
+# Copyright (C) 2026 Starter
+# This file is distributed under the MIT.
+msgid ""
+msgstr ""
+"Project-Id-Version: Modularity Simpleview Events 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/modularity-simpleview-events\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-02-24T14:47:02+01:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: modularity-simpleview-events\n"
+
+#. Plugin Name of the plugin
+#: modularity-simpleview-events.php
+msgid "Modularity Simpleview Events"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: modularity-simpleview-events.php
+msgid "https://github.com/helsingborg-stad/modularity-simpleview-events"
+msgstr ""
+
+#. Description of the plugin
+#: modularity-simpleview-events.php
+msgid "A Simpleview event integration plugin for managing events from Simpleview API."
+msgstr ""
+
+#. Author of the plugin
+#: modularity-simpleview-events.php
+msgid "Starter"
+msgstr ""
+
+#. Author URI of the plugin
+#: modularity-simpleview-events.php
+msgid "https://github.com/helsingborg-stad"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:8
+#: source/php/Admin/Settings.php:31
+msgid "Simpleview Events Settings"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:12
+msgid "API Base URL"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:16
+msgid "The base URL for the Simpleview API endpoint."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:25
+msgid "https://api.simpleview.com"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:29
+msgid "API Key"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:33
+msgid "The API key for authenticating with Simpleview API."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:48
+msgid "Sync Frequency"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:52
+msgid "How often to automatically sync events from Simpleview API."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:61
+msgid "Hourly"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:62
+msgid "Twice Daily"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:63
+msgid "Daily"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:79
+msgid "Use Mock Data"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:83
+msgid "Use local mock JSON file instead of API. Enable this to test with mock data before switching to the live API."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:99
+msgid "Archive Retention Days"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:103
+msgid "Number of days to keep archived posts before permanent deletion. Posts removed from the API will be archived, then deleted after this period."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:117
+msgid "days"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:121
+msgid "Manual Sync"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:133
+msgid "<button type=\"button\" id=\"simpleview-events-manual-sync\" class=\"button button-primary\">Sync Now</button>"
+msgstr ""
+
+#: source/php/Admin/Settings.php:32
+msgid "Simpleview Events"
+msgstr ""
+
+#: source/php/Admin/Settings.php:51
+msgid "Unauthorized"
+msgstr ""
+
+#: source/php/Admin/Settings.php:66
+#, php-format
+msgid "Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned"
+msgstr ""
+
+#: source/php/Admin/Settings.php:75
+#, php-format
+msgid "Warnings: %d"
+msgstr ""
+
+#: source/php/Admin/Settings.php:79
+#, php-format
+msgid "Errors: %d"
+msgstr ""
+
+#: source/php/Admin/Settings.php:89
+msgid "Synchronizer class not found"
+msgstr ""
+
+#: source/php/Admin/Settings.php:212
+msgid "Syncing..."
+msgstr ""
+
+#: source/php/Admin/Settings.php:227
+msgid "Sync completed successfully"
+msgstr ""
+
+#: source/php/Admin/Settings.php:255
+msgid "Sync failed:"
+msgstr ""
+
+#: source/php/Admin/Settings.php:259
+msgid "Error during sync:"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:81
+msgid "Mock data file not found at: "
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:90
+msgid "Failed to read mock data file"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:99
+msgid "Failed to parse mock data: "
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:121
+#: source/php/Api/SimpleviewClient.php:186
+msgid "API credentials are not configured"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:148
+#, php-format
+msgid "API request failed with status %d: %s"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:158
+msgid "Failed to parse API response"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:177
+msgid "Mock data file not found"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:195
+msgid "API request failed: "
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:202
+msgid "API returned empty response"
+msgstr ""
+
+#: source/php/PostStatus/ArchivedPostStatus.php:23
+msgid "Archived"
+msgstr ""
+
+#: source/php/PostStatus/ArchivedPostStatus.php:28
+#, php-format
+msgid "Archived <span class=\"count\">(%s)</span>"
+msgid_plural "Archived <span class=\"count\">(%s)</span>"
+msgstr[0] ""
+msgstr[1] ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:36
+msgid "Add New"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:37
+#, php-format
+msgid "Add New %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:38
+#, php-format
+msgid "New %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:39
+#, php-format
+msgid "Edit %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:40
+#, php-format
+msgid "View %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:41
+#, php-format
+msgid "All %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:42
+#, php-format
+msgid "Search %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:43
+#, php-format
+msgid "Parent %s:"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:44
+#, php-format
+msgid "No %s found."
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:45
+#, php-format
+msgid "No %s found in Trash."
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:46
+msgid "Featured Image"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:47
+msgid "Set featured image"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:48
+msgid "Remove featured image"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:49
+msgid "Use as featured image"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:50
+#, php-format
+msgid "Insert into %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:51
+#, php-format
+msgid "Uploaded to this %s"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:52
+#, php-format
+msgid "Filter %s list"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:53
+#, php-format
+msgid "%s list navigation"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:54
+#, php-format
+msgid "%s list"
+msgstr ""
+
+#: source/php/PostType/DynamicPostTypeManager.php:59
+#, php-format
+msgid "Events synced from Simpleview API for %s"
+msgstr ""
+
+#: source/php/Sync/ApiResponseValidator.php:35
+msgid "API response is empty"
+msgstr ""
+
+#: source/php/Sync/ApiResponseValidator.php:42
+msgid "API response missing productList.product structure"
+msgstr ""
+
+#: source/php/Sync/ApiResponseValidator.php:61
+msgid "API response contains zero products"
+msgstr ""
+
+#: source/php/Sync/ApiResponseValidator.php:73
+#, php-format
+msgid "Product count dropped significantly: %d products (was %d). This may indicate an API issue, but sync will proceed."
+msgstr ""
+
+#: source/php/Sync/EventSynchronizer.php:69
+msgid "Simpleview API credentials are not configured"
+msgstr ""
+
+#: source/php/Sync/EventSynchronizer.php:96
+msgid "No products returned from API"
+msgstr ""
+
+#: source/php/Sync/PostMapper.php:41
+msgid "Untitled Event"
+msgstr ""
+
+#: source/php/Sync/PostMapper.php:146
+msgid "Event data missing Simpleview ID"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:26
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:28
+#, php-format
+msgid "%s Categories"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:27
+#, php-format
+msgid "%s Category"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:29
+#, php-format
+msgid "All %s Categories"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:30
+msgid "Parent Category"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:31
+msgid "Parent Category:"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:32
+msgid "New Category Name"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:33
+msgid "Add New Category"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:34
+msgid "Edit Category"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:35
+msgid "Update Category"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:36
+msgid "View Category"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:37
+msgid "Separate categories with commas"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:38
+msgid "Add or remove categories"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:39
+msgid "Choose from the most used"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:40
+msgid "Popular Categories"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:41
+msgid "Search Categories"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:42
+msgid "Not Found"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:43
+msgid "No categories"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:44
+msgid "Categories list"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:45
+msgid "Categories list navigation"
+msgstr ""
+
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:50
+#, php-format
+msgid "Categories for %s events"
+msgstr ""

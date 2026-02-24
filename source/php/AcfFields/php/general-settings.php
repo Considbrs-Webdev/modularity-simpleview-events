@@ -60,7 +60,7 @@
                 'twicedaily' => __('Twice Daily', 'modularity-simpleview-events'),
                 'daily' => __('Daily', 'modularity-simpleview-events'),
             ),
-            'default_value' => __('daily', 'modularity-simpleview-events'),
+            'default_value' => 'daily',
             'allow_null' => 0,
             'multiple' => 0,
             'ui' => 0,

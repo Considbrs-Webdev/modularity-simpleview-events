@@ -21,8 +21,8 @@ if (! defined('WPINC')) {
 define('MODULARITYSIMPLEVIEWEVENTS_PATH', plugin_dir_path(__FILE__));
 define('MODULARITYSIMPLEVIEWEVENTS_URL', plugins_url('', __FILE__));
 
-// Load text domain
-add_action('init', function () {
+// Load text domain early (before acf/init) so ACF field labels translate
+add_action('plugins_loaded', function () {
     load_plugin_textdomain('modularity-simpleview-events', false, plugin_basename(dirname(__FILE__)) . '/languages');
 });
 

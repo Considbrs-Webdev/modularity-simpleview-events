@@ -22,8 +22,7 @@ class PostMapper
         ?TaxonomyMapper $taxonomyMapper = null,
         ?PostArchiver $postArchiver = null,
         ?SimpleviewEventMetaBuilder $eventMetaBuilder = null
-    )
-    {
+    ) {
         $this->taxonomyMapper = $taxonomyMapper ?? new TaxonomyMapper();
         $this->postArchiver = $postArchiver ?? new PostArchiver();
         $this->eventMetaBuilder = $eventMetaBuilder ?? new SimpleviewEventMetaBuilder();
