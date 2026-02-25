@@ -49,7 +49,7 @@ class App
      */
     public function addViewPaths(array $paths): array
     {
-        if ($this->isSimpleviewEventsContext()) {
+        if ($this->isSimpleviewEventsContext() || is_search()) {
             $paths[] = MODULARITYSIMPLEVIEWEVENTS_PATH . 'views';
         }
 
