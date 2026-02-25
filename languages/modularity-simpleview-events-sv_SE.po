@@ -18,7 +18,7 @@ msgstr ""
 #. Plugin Name of the plugin
 #: modularity-simpleview-events.php
 msgid "Modularity Simpleview Events"
-msgstr "Modularitet Simpleview-evenemang"
+msgstr "Modularity Simpleview-evenemang"
 
 #. Plugin URI of the plugin
 #: modularity-simpleview-events.php
@@ -51,7 +51,7 @@ msgstr "API-bas-URL"
 
 #: source/php/AcfFields/php/general-settings.php:16
 msgid "The base URL for the Simpleview API endpoint."
-msgstr "Bas-URL för Simpleview API-slutpunkten."
+msgstr "Bas-URL för Simpleview API-rutten."
 
 #: source/php/AcfFields/php/general-settings.php:25
 msgid "https://api.simpleview.com"

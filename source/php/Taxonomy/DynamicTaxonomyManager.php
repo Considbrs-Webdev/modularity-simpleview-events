@@ -67,13 +67,28 @@ class DynamicTaxonomyManager
     }
 
     /**
-     * Generate taxonomy slug from post type slug
+     * Generate taxonomy slug from post type slug.
+     * 
+     * WordPress enforces a maximum of 32 characters for taxonomy slugs.
+     * Appending '_cat' (4 chars) instead of '_category' (9 chars) when
+     * the full suffix would exceed the limit.
      * 
      * @param string $postTypeSlug The post type slug
-     * @return string The taxonomy slug
+     * @return string The taxonomy slug (max 32 chars)
      */
     public function getTaxonomySlug(string $postTypeSlug): string
     {
-        return $postTypeSlug . '_category';
+        $slug = $postTypeSlug . '_category';
+
+        if (strlen($slug) > 32) {
+            $slug = $postTypeSlug . '_cat';
+        }
+
+        if (strlen($slug) > 32) {
+            $slug = substr($slug, 0, 32);
+            $slug = rtrim($slug, '_');
+        }
+
+        return $slug;
     }
 }

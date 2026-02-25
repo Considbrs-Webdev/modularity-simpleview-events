@@ -61,105 +61,117 @@ class EventSynchronizer
      */
     public function sync(): array|\WP_Error
     {
-        $this->ensureArchivedStatusRegistered();
-
-        if (!$this->client->isConfigured()) {
+        $lockKey = 'simpleview-events-sync';
+        if (get_transient($lockKey)) {
             return new \WP_Error(
-                'not_configured',
-                __('Simpleview API credentials are not configured', 'modularity-simpleview-events')
+                'already_syncing',
+                __('Simpleview Events Sync is already in progress', 'modularity-simpleview-events')
             );
         }
 
-        $apiResponse = $this->client->fetchEvents();
+        set_transient($lockKey, true, 3600);
 
-        if (is_wp_error($apiResponse)) {
-            error_log('Simpleview Events Sync Error: ' . $apiResponse->get_error_message());
-            return $apiResponse;
-        }
-
-        $validation = $this->validator->validate($apiResponse);
-        
-        if (!$validation['valid']) {
-            $errorMessage = implode('; ', $validation['warnings']);
-            error_log('Simpleview Events Sync Error: ' . $errorMessage);
-            return new \WP_Error(
-                'invalid_response',
-                $errorMessage
-            );
-        }
-
-        $products = $this->extractProductsFromResponse($apiResponse);
-
-        if (empty($products)) {
-            return new \WP_Error(
-                'no_products',
-                __('No products returned from API', 'modularity-simpleview-events')
-            );
-        }
-
-        $groupedProducts = $this->groupProductsByMediaChannel($products);
-        $activePostTypeSlugs = array_keys($groupedProducts);
-
-        $results = [
-            'created' => 0,
-            'updated' => 0,
-            'archived' => 0,
-            'restored' => 0,
-            'pruned' => 0,
-            'errors' => [],
-            'warnings' => $validation['warnings'] ?? [],
-            'post_types' => [],
-        ];
-
-        $retentionDays = (int) get_field('archive_retention_days', 'option') ?: 30;
-
-        foreach ($groupedProducts as $postTypeSlug => $postTypeData) {
-            $mediaChannelName = $postTypeData['name'];
-            $mediaChannelIds = $postTypeData['ids'];
-            $postTypeProducts = $postTypeData['products'];
-            $primaryMediaChannelId = $mediaChannelIds[0] ?? '';
-
-            $postTypeResult = $this->syncMediaChannel($postTypeProducts, $mediaChannelName, $primaryMediaChannelId, $retentionDays);
-
-            $results['created'] += $postTypeResult['created'];
-            $results['updated'] += $postTypeResult['updated'];
-            $results['archived'] += $postTypeResult['archived'];
-            $results['restored'] += $postTypeResult['restored'];
-            $results['pruned'] += $postTypeResult['pruned'];
-            $results['errors'] = array_merge($results['errors'], $postTypeResult['errors']);
-            $results['post_types'][$postTypeSlug] = [
-                'name' => $mediaChannelName,
-                'media_channel_ids' => $mediaChannelIds,
-                'created' => $postTypeResult['created'],
-                'updated' => $postTypeResult['updated'],
-                'archived' => $postTypeResult['archived'],
-                'restored' => $postTypeResult['restored'],
-                'pruned' => $postTypeResult['pruned'],
-                'errors' => count($postTypeResult['errors']),
-            ];
-        }
-
-        $this->postTypeManager->cleanupUnusedPostTypes($activePostTypeSlugs);
-        update_option('simpleview_events_last_sync', current_time('mysql'));
-
-        error_log(sprintf(
-            'Simpleview Events Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d post types',
-            $results['created'],
-            $results['updated'],
-            $results['archived'],
-            $results['restored'],
-            $results['pruned'],
-            count($results['errors']),
-            count($results['post_types'])
-        ));
-
-        if (!empty($results['warnings'])) {
-            foreach ($results['warnings'] as $warning) {
-                error_log('Simpleview Events Sync Warning: ' . $warning);
+        try {
+            if (!$this->client->isConfigured()) {
+                return new \WP_Error(
+                    'not_configured',
+                    __('Simpleview API credentials are not configured', 'modularity-simpleview-events')
+                );
             }
-        }
 
-        return $results;
+            $apiResponse = $this->client->fetchEvents();
+
+            if (is_wp_error($apiResponse)) {
+                error_log('Simpleview Events Sync Error: ' . $apiResponse->get_error_message());
+                return $apiResponse;
+            }
+
+            $validation = $this->validator->validate($apiResponse);
+
+            if (!$validation['valid']) {
+                $errorMessage = implode('; ', $validation['warnings']);
+                error_log('Simpleview Events Sync Error: ' . $errorMessage);
+                return new \WP_Error(
+                    'invalid_response',
+                    $errorMessage
+                );
+            }
+
+            $products = $this->extractProductsFromResponse($apiResponse);
+
+            if (empty($products)) {
+                return new \WP_Error(
+                    'no_products',
+                    __('No products returned from API', 'modularity-simpleview-events')
+                );
+            }
+
+            $groupedProducts = $this->groupProductsByMediaChannel($products);
+            $activePostTypeSlugs = array_keys($groupedProducts);
+
+            $results = [
+                'created' => 0,
+                'updated' => 0,
+                'archived' => 0,
+                'restored' => 0,
+                'pruned' => 0,
+                'errors' => [],
+                'warnings' => $validation['warnings'] ?? [],
+                'post_types' => [],
+            ];
+
+            $retentionDays = (int) get_field('archive_retention_days', 'simpleview-events-settings') ?: 30;
+
+            foreach ($groupedProducts as $postTypeSlug => $postTypeData) {
+                $mediaChannelName = $postTypeData['name'];
+                $mediaChannelIds = $postTypeData['ids'];
+                $postTypeProducts = $postTypeData['products'];
+                $primaryMediaChannelId = $mediaChannelIds[0] ?? '';
+
+                $postTypeResult = $this->syncMediaChannel($postTypeProducts, $mediaChannelName, $primaryMediaChannelId, $retentionDays);
+
+                $results['created'] += $postTypeResult['created'];
+                $results['updated'] += $postTypeResult['updated'];
+                $results['archived'] += $postTypeResult['archived'];
+                $results['restored'] += $postTypeResult['restored'];
+                $results['pruned'] += $postTypeResult['pruned'];
+                $results['errors'] = array_merge($results['errors'], $postTypeResult['errors']);
+                $results['post_types'][$postTypeSlug] = [
+                    'name' => $mediaChannelName,
+                    'media_channel_ids' => $mediaChannelIds,
+                    'created' => $postTypeResult['created'],
+                    'updated' => $postTypeResult['updated'],
+                    'archived' => $postTypeResult['archived'],
+                    'restored' => $postTypeResult['restored'],
+                    'pruned' => $postTypeResult['pruned'],
+                    'errors' => count($postTypeResult['errors']),
+                ];
+            }
+
+            $this->postTypeManager->cleanupUnusedPostTypes($activePostTypeSlugs);
+            update_option('simpleview_events_last_sync', current_time('mysql'));
+
+            error_log(sprintf(
+                'Simpleview Events Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d post types',
+                $results['created'],
+                $results['updated'],
+                $results['archived'],
+                $results['restored'],
+                $results['pruned'],
+                count($results['errors']),
+                count($results['post_types'])
+            ));
+
+            if (!empty($results['warnings'])) {
+                foreach ($results['warnings'] as $warning) {
+                    error_log('Simpleview Events Sync Warning: ' . $warning);
+                }
+            }
+
+            return $results;
+        } finally {
+            delete_transient($lockKey);
+        }
     }
 
     /**
@@ -224,7 +236,7 @@ class EventSynchronizer
                         break;
                     }
                 }
-                
+
                 if (!$alreadyAdded) {
                     $grouped[$postTypeSlug]['products'][] = $product;
                 }
@@ -311,17 +323,16 @@ class EventSynchronizer
                     $result->get_error_message()
                 ));
             } else {
-                $syncedPostIds[] = $result;
+                $postId = $result['post_id'];
+                $action = $result['action'];
+                $syncedPostIds[] = $postId;
 
-                // Check if it was an update or create
-                if ($existingPostId && $existingPostId === $result) {
-                    if ($wasArchived) {
-                        $results['restored']++;
-                    } else {
-                        $results['updated']++;
-                    }
-                } else {
+                if ($action === 'created') {
                     $results['created']++;
+                } elseif ($action === 'updated') {
+                    $results[$wasArchived ? 'restored' : 'updated']++;
+                } elseif ($action === 'skipped' && $wasArchived) {
+                    $results['restored']++;
                 }
             }
         }

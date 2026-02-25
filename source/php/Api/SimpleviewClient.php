@@ -15,20 +15,7 @@ class SimpleviewClient
     private string $apiKey;
     private int $timeout;
 
-    /**
-     *  Static parameters for the Simpleview API (without LicenceKey which is set at runtime)
-     * 
-     * @var array
-     */
-    private static array $baseParameters = [
-        'op' => 'GetProductList',
-        'LanguageId' => 'sv',
-        'DBOwnerIdList' => '143',
-        'CountryId' => 'SE',
-        'DistributionChannelId' => '634573',
-        'json' => 'on',
-        'CategoryIdList' => '',
-    ];
+    private const SETTINGS_POST_ID = 'simpleview-events-settings';
 
     /**
      * Constructor
@@ -39,82 +26,51 @@ class SimpleviewClient
      */
     public function __construct(?string $baseUrl = null, ?string $apiKey = null, int $timeout = 30)
     {
-        $this->baseUrl = $baseUrl ?? get_field('api_base_url', 'simpleview-events-settings') ?? '';
-        $this->apiKey = $apiKey ?? get_field('api_key', 'simpleview-events-settings') ?? '';
+        $this->baseUrl = $baseUrl ?? get_field('api_base_url', self::SETTINGS_POST_ID) ?? '';
+        $this->apiKey = $apiKey ?? get_field('api_key', self::SETTINGS_POST_ID) ?? '';
         $this->timeout = $timeout;
     }
 
     /**
-     * Get API parameters with LicenceKey set at runtime
+     * Build query parameters from ACF settings + structural defaults.
      * 
      * @return array
      */
     private function getParameters(): array
     {
-        $parameters = self::$baseParameters;
+        $parameters = [
+            'op'    => 'GetProductList',
+            'json'  => 'on',
+        ];
+
+        $configurable = [
+            'language_id'              => 'LanguageId',
+            'db_owner_id_list'         => 'DBOwnerIdList',
+            'country_id'               => 'CountryId',
+            'distribution_channel_id'  => 'DistributionChannelId',
+        ];
+
+        foreach ($configurable as $acfField => $apiParam) {
+            $value = get_field($acfField, self::SETTINGS_POST_ID);
+            if (is_string($value) && $value !== '') {
+                $parameters[$apiParam] = $value;
+            }
+        }
+
+        $parameters['CategoryIdList'] = '';
         $parameters['LicenceKey'] = $this->apiKey;
+
         return $parameters;
     }
 
     /**
-     * Check if mock mode is enabled
+     * Fetch events from Simpleview API
      * 
-     * @return bool
-     */
-    private function isMockMode(): bool
-    {
-        return (bool) get_field('use_mock_data', 'simpleview-events-settings');
-    }
-
-    /**
-     * Fetch events from local mock JSON file
-     * 
-     * @return array|\WP_Error Array of event data or WP_Error on failure
-     */
-    private function fetchFromMockFile(): array|\WP_Error
-    {
-        $mockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json';
-
-        if (!file_exists($mockFile)) {
-            return new \WP_Error(
-                'mock_not_found',
-                __('Mock data file not found at: ', 'modularity-simpleview-events') . $mockFile
-            );
-        }
-
-        $jsonContent = file_get_contents($mockFile);
-
-        if ($jsonContent === false) {
-            return new \WP_Error(
-                'mock_read_error',
-                __('Failed to read mock data file', 'modularity-simpleview-events')
-            );
-        }
-
-        $data = json_decode($jsonContent, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return new \WP_Error(
-                'json_error',
-                __('Failed to parse mock data: ', 'modularity-simpleview-events') . json_last_error_msg()
-            );
-        }
-
-        return $data ?? [];
-    }
-
-    /**
-     * Fetch events from Simpleview API or mock file
-     * 
-     * @param array $params Optional query parameters
+     * @param array $params Optional extra query parameters
      * @return array|\WP_Error Array of event data or WP_Error on failure
      */
     public function fetchEvents(array $params = []): array|\WP_Error
     {
-        if ($this->isMockMode()) {
-            return $this->fetchFromMockFile();
-        }
-
         if (empty($this->baseUrl) || empty($this->apiKey)) {
             return new \WP_Error(
                 'missing_credentials',
@@ -163,37 +119,23 @@ class SimpleviewClient
     }
 
     /**
-     * Test API connection
+     * Test API connection and return a summary of what the API returns.
      * 
-     * @return bool|\WP_Error True if connection successful, WP_Error otherwise
+     * @return array|\WP_Error Summary array on success, WP_Error on failure
      */
-    public function testConnection(): bool|\WP_Error
+    public function testConnection(): array|\WP_Error
     {
-        if ($this->isMockMode()) {
-            $mockFile = MODULARITYSIMPLEVIEWEVENTS_PATH . 'simpleview.json';
-            if (!file_exists($mockFile)) {
-                return new \WP_Error(
-                    'mock_not_found',
-                    __('Mock data file not found', 'modularity-simpleview-events')
-                );
-            }
-            return true;
-        }
-
         if (empty($this->baseUrl) || empty($this->apiKey)) {
             return new \WP_Error(
                 'missing_credentials',
-                __('API credentials are not configured', 'modularity-simpleview-events')
+                __('API credentials are not configured. Please fill in Base URL and API Key.', 'modularity-simpleview-events')
             );
         }
 
-        $result = $this->fetchEvents($this->getParameters());
+        $result = $this->fetchEvents();
 
         if (is_wp_error($result)) {
-            return new \WP_Error(
-                'api_error',
-                __('API request failed: ' . $result->get_error_message(), 'modularity-simpleview-events')
-            );
+            return $result;
         }
 
         if (empty($result)) {
@@ -203,7 +145,45 @@ class SimpleviewClient
             );
         }
 
-        return true;
+        if (!isset($result['productList']['product'])) {
+            return new \WP_Error(
+                'api_error',
+                __('API response missing productList.product structure', 'modularity-simpleview-events')
+            );
+        }
+
+        $productData = $result['productList']['product'];
+        $products = isset($productData[0]) ? $productData : [$productData];
+        $productCount = count($products);
+
+        $mediaChannels = [];
+        foreach ($products as $product) {
+            $mcData = $product['mediaChannelList']['mediaChannel'] ?? null;
+            if ($mcData === null) {
+                continue;
+            }
+
+            $channels = isset($mcData['@id']) ? [$mcData] : (is_array($mcData) ? $mcData : []);
+            foreach ($channels as $channel) {
+                if (($channel['typeId'] ?? '') !== 'WEBSITECONTENT') {
+                    continue;
+                }
+                $id = (string) ($channel['@id'] ?? '');
+                $name = $channel['name'] ?? '';
+                if ($id === '' || $name === '') {
+                    continue;
+                }
+                if (!isset($mediaChannels[$id])) {
+                    $mediaChannels[$id] = ['id' => $id, 'name' => $name, 'products' => 0];
+                }
+                $mediaChannels[$id]['products']++;
+            }
+        }
+
+        return [
+            'product_count' => $productCount,
+            'media_channels' => array_values($mediaChannels),
+        ];
     }
 
     /**
@@ -217,16 +197,12 @@ class SimpleviewClient
     }
 
     /**
-     * Check if credentials are configured or mock mode is enabled
+     * Check if credentials are configured
      * 
      * @return bool
      */
     public function isConfigured(): bool
     {
-        if ($this->isMockMode()) {
-            return true;
-        }
-
         return !empty($this->baseUrl) && !empty($this->apiKey);
     }
 }

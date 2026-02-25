@@ -1,7 +1,7 @@
 <?php 
 
-if (function_exists('acf_add_local_field_group')) {
-    acf_add_local_field_group(array(
+if (function_exists('acf_add_local_field_group')) {
+    acf_add_local_field_group(array(
     'key' => 'group_simpleview_events_general_settings',
     'title' => __('Simpleview Events Settings', 'modularity-simpleview-events'),
     'fields' => array(
@@ -11,7 +11,7 @@
             'name' => 'api_base_url',
             'aria-label' => '',
             'type' => 'url',
-            'instructions' => __('The base URL for the Simpleview API endpoint.', 'modularity-simpleview-events'),
+            'instructions' => __('The base URL for the Simpleview API endpoint (without query parameters).', 'modularity-simpleview-events'),
             'required' => 1,
             'conditional_logic' => 0,
             'wrapper' => array(
@@ -20,15 +20,15 @@
                 'id' => '',
             ),
             'default_value' => '',
-            'placeholder' => __('https://api.simpleview.com', 'modularity-simpleview-events'),
+            'placeholder' => 'https://api.example.com/endpoint',
         ),
         1 => array(
             'key' => 'field_simpleview_events_api_key',
-            'label' => __('API Key', 'modularity-simpleview-events'),
+            'label' => __('API Key (LicenceKey)', 'modularity-simpleview-events'),
             'name' => 'api_key',
             'aria-label' => '',
             'type' => 'password',
-            'instructions' => __('The API key for authenticating with Simpleview API.', 'modularity-simpleview-events'),
+            'instructions' => __('The LicenceKey for authenticating with the Simpleview API.', 'modularity-simpleview-events'),
             'required' => 1,
             'conditional_logic' => 0,
             'wrapper' => array(
@@ -42,43 +42,88 @@
             'append' => '',
         ),
         2 => array(
-            'key' => 'field_simpleview_events_sync_frequency',
-            'label' => __('Sync Frequency', 'modularity-simpleview-events'),
-            'name' => 'sync_frequency',
+            'key' => 'field_simpleview_events_db_owner_id_list',
+            'label' => __('DB Owner ID List', 'modularity-simpleview-events'),
+            'name' => 'db_owner_id_list',
             'aria-label' => '',
-            'type' => 'select',
-            'instructions' => __('How often to automatically sync events from Simpleview API.', 'modularity-simpleview-events'),
-            'required' => 0,
+            'type' => 'text',
+            'instructions' => __('The DBOwnerIdList parameter sent to the API (e.g. "143").', 'modularity-simpleview-events'),
+            'required' => 1,
             'conditional_logic' => 0,
             'wrapper' => array(
-                'width' => '',
+                'width' => '50',
                 'class' => '',
                 'id' => '',
             ),
-            'choices' => array(
-                'hourly' => __('Hourly', 'modularity-simpleview-events'),
-                'twicedaily' => __('Twice Daily', 'modularity-simpleview-events'),
-                'daily' => __('Daily', 'modularity-simpleview-events'),
-            ),
-            'default_value' => 'daily',
-            'allow_null' => 0,
-            'multiple' => 0,
-            'ui' => 0,
-            'return_format' => 'value',
-            'ajax' => 0,
-            'placeholder' => '',
-            'create_options' => 0,
-            'save_options' => 0,
-            'allow_custom' => 0,
-            'search_placeholder' => '',
+            'default_value' => '',
+            'placeholder' => '143',
+            'prepend' => '',
+            'append' => '',
         ),
         3 => array(
-            'key' => 'field_simpleview_events_use_mock_data',
-            'label' => __('Use Mock Data', 'modularity-simpleview-events'),
-            'name' => 'use_mock_data',
+            'key' => 'field_simpleview_events_distribution_channel_id',
+            'label' => __('Distribution Channel ID', 'modularity-simpleview-events'),
+            'name' => 'distribution_channel_id',
             'aria-label' => '',
-            'type' => 'true_false',
-            'instructions' => __('Use local mock JSON file instead of API. Enable this to test with mock data before switching to the live API.', 'modularity-simpleview-events'),
+            'type' => 'text',
+            'instructions' => __('The DistributionChannelId parameter sent to the API (e.g. "634573").', 'modularity-simpleview-events'),
+            'required' => 1,
+            'conditional_logic' => 0,
+            'wrapper' => array(
+                'width' => '50',
+                'class' => '',
+                'id' => '',
+            ),
+            'default_value' => '',
+            'placeholder' => '634573',
+            'prepend' => '',
+            'append' => '',
+        ),
+        4 => array(
+            'key' => 'field_simpleview_events_language_id',
+            'label' => __('Language ID', 'modularity-simpleview-events'),
+            'name' => 'language_id',
+            'aria-label' => '',
+            'type' => 'text',
+            'instructions' => __('The LanguageId parameter (e.g. "sv" for Swedish).', 'modularity-simpleview-events'),
+            'required' => 0,
+            'conditional_logic' => 0,
+            'wrapper' => array(
+                'width' => '50',
+                'class' => '',
+                'id' => '',
+            ),
+            'default_value' => 'sv',
+            'placeholder' => 'sv',
+            'prepend' => '',
+            'append' => '',
+        ),
+        5 => array(
+            'key' => 'field_simpleview_events_country_id',
+            'label' => __('Country ID', 'modularity-simpleview-events'),
+            'name' => 'country_id',
+            'aria-label' => '',
+            'type' => 'text',
+            'instructions' => __('The CountryId parameter (e.g. "SE" for Sweden).', 'modularity-simpleview-events'),
+            'required' => 0,
+            'conditional_logic' => 0,
+            'wrapper' => array(
+                'width' => '50',
+                'class' => '',
+                'id' => '',
+            ),
+            'default_value' => 'SE',
+            'placeholder' => 'SE',
+            'prepend' => '',
+            'append' => '',
+        ),
+        6 => array(
+            'key' => 'field_simpleview_events_test_connection',
+            'label' => __('Test Connection', 'modularity-simpleview-events'),
+            'name' => '',
+            'aria-label' => '',
+            'type' => 'message',
+            'instructions' => __('Save settings first, then test the connection to verify your API configuration. Shows which media channels are available.', 'modularity-simpleview-events'),
             'required' => 0,
             'conditional_logic' => 0,
             'wrapper' => array(
@@ -86,13 +131,11 @@
                 'class' => '',
                 'id' => '',
             ),
-            'message' => '',
-            'default_value' => 0,
-            'ui' => 1,
-            'ui_on_text' => '',
-            'ui_off_text' => '',
+            'message' => '<button type="button" id="simpleview-events-test-connection" class="button button-secondary">Test Connection</button><div id="simpleview-events-test-result"></div>',
+            'new_lines' => '',
+            'esc_html' => 0,
         ),
-        4 => array(
+        7 => array(
             'key' => 'field_simpleview_events_archive_retention_days',
             'label' => __('Archive Retention Days', 'modularity-simpleview-events'),
             'name' => 'archive_retention_days',
@@ -114,7 +157,7 @@
             'prepend' => '',
             'append' => __('days', 'modularity-simpleview-events'),
         ),
-        5 => array(
+        8 => array(
             'key' => 'field_simpleview_events_manual_sync',
             'label' => __('Manual Sync', 'modularity-simpleview-events'),
             'name' => '',
@@ -159,4 +202,4 @@
     'acfe_meta' => '',
     'acfe_note' => '',
 ));
-}
+}

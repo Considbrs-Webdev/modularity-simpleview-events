@@ -162,15 +162,12 @@ class SimpleviewCommand
         \WP_CLI::line('=== Simpleview API Debug ===');
         \WP_CLI::line('');
 
-        // Show configuration
         $baseUrl = $client->getBaseUrl();
-        $isMockMode = (bool) get_field('use_mock_data', 'simpleview-events-settings');
         $apiKey = get_field('api_key', 'simpleview-events-settings');
 
         \WP_CLI::line('Configuration:');
         \WP_CLI::line('  Base URL: ' . ($baseUrl ?: '(not set)'));
         \WP_CLI::line('  API Key: ' . ($apiKey ? substr($apiKey, 0, 8) . '...' : '(not set)'));
-        \WP_CLI::line('  Mock Mode: ' . ($isMockMode ? 'ENABLED' : 'disabled'));
         \WP_CLI::line('  Is Configured: ' . ($client->isConfigured() ? 'Yes' : 'No'));
         \WP_CLI::line('');
 

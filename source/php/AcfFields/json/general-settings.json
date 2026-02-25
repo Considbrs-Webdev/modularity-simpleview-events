@@ -8,7 +8,7 @@
             "name": "api_base_url",
             "aria-label": "",
             "type": "url",
-            "instructions": "The base URL for the Simpleview API endpoint.",
+            "instructions": "The base URL for the Simpleview API endpoint (without query parameters).",
             "required": 1,
             "conditional_logic": 0,
             "wrapper": {
@@ -17,15 +17,15 @@
                 "id": ""
             },
             "default_value": "",
-            "placeholder": "https:\/\/api.simpleview.com"
+            "placeholder": "https:\/\/api.example.com\/endpoint"
         },
         {
             "key": "field_simpleview_events_api_key",
-            "label": "API Key",
+            "label": "API Key (LicenceKey)",
             "name": "api_key",
             "aria-label": "",
             "type": "password",
-            "instructions": "The API key for authenticating with Simpleview API.",
+            "instructions": "The LicenceKey for authenticating with the Simpleview API.",
             "required": 1,
             "conditional_logic": 0,
             "wrapper": {
@@ -39,43 +39,88 @@
             "append": ""
         },
         {
-            "key": "field_simpleview_events_sync_frequency",
-            "label": "Sync Frequency",
-            "name": "sync_frequency",
+            "key": "field_simpleview_events_db_owner_id_list",
+            "label": "DB Owner ID List",
+            "name": "db_owner_id_list",
             "aria-label": "",
-            "type": "select",
-            "instructions": "How often to automatically sync events from Simpleview API.",
-            "required": 0,
+            "type": "text",
+            "instructions": "The DBOwnerIdList parameter sent to the API (e.g. \"143\").",
+            "required": 1,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
+                "width": "50",
                 "class": "",
                 "id": ""
             },
-            "choices": {
-                "hourly": "Hourly",
-                "twicedaily": "Twice Daily",
-                "daily": "Daily"
-            },
-            "default_value": "daily",
-            "allow_null": 0,
-            "multiple": 0,
-            "ui": 0,
-            "return_format": "value",
-            "ajax": 0,
-            "placeholder": "",
-            "create_options": 0,
-            "save_options": 0,
-            "allow_custom": 0,
-            "search_placeholder": ""
+            "default_value": "",
+            "placeholder": "143",
+            "prepend": "",
+            "append": ""
         },
         {
-            "key": "field_simpleview_events_use_mock_data",
-            "label": "Use Mock Data",
-            "name": "use_mock_data",
+            "key": "field_simpleview_events_distribution_channel_id",
+            "label": "Distribution Channel ID",
+            "name": "distribution_channel_id",
             "aria-label": "",
-            "type": "true_false",
-            "instructions": "Use local mock JSON file instead of API. Enable this to test with mock data before switching to the live API.",
+            "type": "text",
+            "instructions": "The DistributionChannelId parameter sent to the API (e.g. \"634573\").",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "634573",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_simpleview_events_language_id",
+            "label": "Language ID",
+            "name": "language_id",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "The LanguageId parameter (e.g. \"sv\" for Swedish).",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "sv",
+            "placeholder": "sv",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_simpleview_events_country_id",
+            "label": "Country ID",
+            "name": "country_id",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "The CountryId parameter (e.g. \"SE\" for Sweden).",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "SE",
+            "placeholder": "SE",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_simpleview_events_test_connection",
+            "label": "Test Connection",
+            "name": "",
+            "aria-label": "",
+            "type": "message",
+            "instructions": "Save settings first, then test the connection to verify your API configuration. Shows which media channels are available.",
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
@@ -83,11 +128,9 @@
                 "class": "",
                 "id": ""
             },
-            "message": "",
-            "default_value": 0,
-            "ui": 1,
-            "ui_on_text": "",
-            "ui_off_text": ""
+            "message": "<button type=\"button\" id=\"simpleview-events-test-connection\" class=\"button button-secondary\">Test Connection<\/button><div id=\"simpleview-events-test-result\"><\/div>",
+            "new_lines": "",
+            "esc_html": 0
         },
         {
             "key": "field_simpleview_events_archive_retention_days",
@@ -156,4 +199,3 @@
     "acfe_meta": "",
     "acfe_note": ""
 }]
-

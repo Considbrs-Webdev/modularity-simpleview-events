@@ -34,9 +34,11 @@ class SimpleviewEventMetaBuilder
         }
 
         $earliestSchedule = $this->pickEarliestSchedule($normalizedSchedules);
-        $startDate = $earliestSchedule ? $this->computeStartDateFromSchedule($earliestSchedule) : null;
-        if ($startDate !== null) {
-            $meta['start_date'] = $startDate;
+        $startDateTime = $earliestSchedule ? $this->getScheduleStartDateTime($earliestSchedule) : null;
+        
+        if ($startDateTime !== null) {
+            $meta['start_date'] = $startDateTime->format('Y-m-d H:i:s');
+            $meta['start_date_timestamp'] = $startDateTime->getTimestamp();
         } else {
             error_log(sprintf(
                 'Simpleview Events: Could not compute start_date for product %s',
@@ -124,11 +126,10 @@ class SimpleviewEventMetaBuilder
         return $bestSchedule;
     }
 
-    private function computeStartDateFromSchedule(array $schedule): ?string
+    private function getScheduleStartDateTime(array $schedule): ?\DateTimeImmutable
     {
         $tz = new \DateTimeZone(self::TIMEZONE);
-        $dt = $this->parseScheduleStart($schedule, $tz);
-        return $dt ? $dt->format('Y-m-d H:i:s') : null;
+        return $this->parseScheduleStart($schedule, $tz);
     }
 
     /**

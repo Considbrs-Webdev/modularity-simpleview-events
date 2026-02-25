@@ -16,7 +16,7 @@ class ArchiveDefaultsApplicator
         'style' => 'cards',
         'post_count' => 12,
         'number_of_columns' => 1,
-        'order_by' => 'start_date',
+        'order_by' => 'start_date_timestamp',
         'order_direction' => 'asc',
         'date_field' => 'start_date',
         'date_format' => 'date',

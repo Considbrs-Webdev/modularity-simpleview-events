@@ -84,16 +84,26 @@ class DynamicPostTypeManager
     }
 
     /**
-     * Generate post type slug from mediaChannel name
+     * Generate post type slug from mediaChannel name.
+     * 
+     * WordPress enforces a maximum of 20 characters for post type slugs.
+     * The 'sv_' prefix uses 3 characters, leaving 17 for the name portion.
      * 
      * @param string $mediaChannelName The mediaChannel name
-     * @return string The sanitized post type slug
+     * @return string The sanitized post type slug (max 20 chars)
      */
     public function getPostTypeSlug(string $mediaChannelName): string
     {
         $slug = sanitize_title($mediaChannelName);
         $slug = str_replace('-', '_', $slug);
-        return 'sv_' . $slug;
+        $slug = 'sv_' . $slug;
+
+        if (strlen($slug) > 20) {
+            $slug = substr($slug, 0, 20);
+            $slug = rtrim($slug, '_');
+        }
+
+        return $slug;
     }
 
     /**

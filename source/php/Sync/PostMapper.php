@@ -29,6 +29,21 @@ class PostMapper
     }
 
     /**
+     * Convert Simpleview ISO 8601 date to WordPress Y-m-d H:i:s format.
+     *
+     * @param string|null $simpleviewDate e.g. "2026-02-09T08:26:54"
+     * @return string|null WordPress format or null if invalid
+     */
+    private function toWordPressDate(?string $simpleviewDate): ?string
+    {
+        if (!is_string($simpleviewDate) || trim($simpleviewDate) === '') {
+            return null;
+        }
+        $normalized = str_replace('T', ' ', trim($simpleviewDate));
+        return strlen($normalized) >= 19 ? $normalized : null;
+    }
+
+    /**
      * Map API event data to WordPress post array
      * 
      * @param array $eventData Single event data from API
@@ -56,12 +71,22 @@ class PostMapper
             }
         }
 
+        $now = current_time('mysql');
+        $postDate = $this->toWordPressDate($eventData['@created'] ?? null) ?? $now;
+        $postModified = $this->toWordPressDate($eventData['@modified'] ?? null)
+            ?? $this->toWordPressDate($eventData['@created'] ?? null)
+            ?? $now;
+
         $post = [
             'post_title' => $title,
             'post_content' => $content,
             'post_excerpt' => $excerpt,
             'post_status' => 'publish',
             'post_type' => $postTypeSlug,
+            'post_date' => $postDate,
+            'post_date_gmt' => get_gmt_from_date($postDate),
+            'post_modified' => $postModified,
+            'post_modified_gmt' => get_gmt_from_date($postModified),
             'meta_input' => [
                 'simpleview_id' => (string) $simpleviewId,
             ],
@@ -130,13 +155,15 @@ class PostMapper
     /**
      * Create or update a post from event data
      * 
+     * Skips update when @modified matches existing post_modified (content unchanged).
+     * 
      * @param array $eventData Single event data from API
      * @param string $postTypeSlug The post type slug
      * @param string $taxonomySlug The taxonomy slug
      * @param array $categories Array of category term IDs mapped by Simpleview category ID
-     * @return int|WP_Error Post ID on success, WP_Error on failure
+     * @return array{post_id: int, action: 'created'|'updated'|'skipped'}|\WP_Error Result on success, WP_Error on failure
      */
-    public function createOrUpdatePost(array $eventData, string $postTypeSlug, string $taxonomySlug, array $categories, ?string $mediaChannelName = null, ?string $mediaChannelId = null): int|\WP_Error
+    public function createOrUpdatePost(array $eventData, string $postTypeSlug, string $taxonomySlug, array $categories, ?string $mediaChannelName = null, ?string $mediaChannelId = null): array|\WP_Error
     {
         $simpleviewId = $eventData['@id'] ?? $eventData['id'] ?? '';
 
@@ -148,9 +175,22 @@ class PostMapper
         }
 
         $existingPostId = $this->findExistingPost((string) $simpleviewId, $postTypeSlug);
+        $wasArchived = $existingPostId && $this->postArchiver->isArchived($existingPostId);
 
-        if ($existingPostId && $this->postArchiver->isArchived($existingPostId)) {
+        if ($existingPostId && $wasArchived) {
             $this->postArchiver->restorePost($existingPostId);
+        }
+
+        if ($existingPostId) {
+            $existingPost = get_post($existingPostId);
+            $incomingModified = $this->toWordPressDate($eventData['@modified'] ?? null);
+
+            if ($existingPost && $incomingModified && $existingPost->post_modified === $incomingModified) {
+                return [
+                    'post_id' => $existingPostId,
+                    'action' => 'skipped',
+                ];
+            }
         }
 
         $postData = $this->mapToPost($eventData, $postTypeSlug);
@@ -168,13 +208,29 @@ class PostMapper
         if ($existingPostId) {
             $postData['ID'] = $existingPostId;
             $postId = wp_update_post($postData, true);
+            $action = 'updated';
         } else {
             $postId = wp_insert_post($postData, true);
+            $action = 'created';
         }
 
         if (is_wp_error($postId)) {
             return $postId;
         }
+
+        // WordPress overwrites post_modified when wp_update_post runs. We must set it
+        // directly so the skip check works on the next sync.
+        global $wpdb;
+        $wpdb->update(
+            $wpdb->posts,
+            [
+                'post_modified' => $postData['post_modified'],
+                'post_modified_gmt' => $postData['post_modified_gmt'],
+            ],
+            ['ID' => $postId],
+            ['%s', '%s'],
+            ['%d']
+        );
 
         foreach ($taxonomyTerms as $taxonomy => $termIds) {
             if (!empty($termIds)) {
@@ -182,6 +238,9 @@ class PostMapper
             }
         }
 
-        return $postId;
+        return [
+            'post_id' => $postId,
+            'action' => $action,
+        ];
     }
 }
