@@ -61,6 +61,21 @@ class SimpleviewEventMetaBuilder
             $meta['simpleview_event_location_name'] = $location;
         }
 
+        $address = $this->extractAddressFromProduct($product);
+        if (!empty($address)) {
+            $meta['simpleview_address_json'] = wp_json_encode($address, JSON_UNESCAPED_UNICODE);
+        }
+
+        $geo = $this->extractGeoFromProduct($product);
+        if (!empty($geo)) {
+            $meta['simpleview_geo_json'] = wp_json_encode($geo, JSON_UNESCAPED_UNICODE);
+        }
+
+        $contact = $this->extractContactFromProduct($product);
+        if (!empty($contact)) {
+            $meta['simpleview_contact_json'] = wp_json_encode($contact, JSON_UNESCAPED_UNICODE);
+        }
+
         $organiser = $this->fallbackOrganiserFromProduct($product);
         if ($organiser !== null && $organiser !== '') {
             $meta['simpleview_event_organiser'] = $organiser;
@@ -205,6 +220,128 @@ class SimpleviewEventMetaBuilder
         }
 
         return null;
+    }
+
+    /**
+     * Extract structured address from product.
+     *
+     * @return array{street?:string,postalCode?:string,postalArea?:string,municipality?:string,county?:string,country?:string}
+     */
+    private function extractAddressFromProduct(array $product): array
+    {
+        $addr = $product['address'] ?? null;
+        if (!is_array($addr)) {
+            return [];
+        }
+
+        $street = $addr['street'] ?? null;
+        $postalArea = $addr['postalArea'] ?? null;
+        $postalCode = is_array($postalArea) ? ($postalArea['@postalCode'] ?? null) : null;
+        $postalAreaText = is_array($postalArea) ? ($postalArea['#text'] ?? null) : null;
+        $municipality = $addr['municipality'] ?? null;
+        $municipalityText = is_array($municipality) ? ($municipality['#text'] ?? null) : null;
+        $county = $addr['county'] ?? null;
+        $countyText = is_array($county) ? ($county['#text'] ?? null) : null;
+        $country = $addr['country'] ?? null;
+        $countryText = is_array($country) ? ($country['#text'] ?? null) : null;
+
+        $result = [];
+        if (is_string($street) && trim($street) !== '') {
+            $result['street'] = trim($street);
+        }
+        if (is_string($postalCode) && trim($postalCode) !== '') {
+            $result['postalCode'] = trim($postalCode);
+        }
+        if (is_string($postalAreaText) && trim($postalAreaText) !== '') {
+            $result['postalArea'] = trim($postalAreaText);
+        }
+        if (is_string($municipalityText) && trim($municipalityText) !== '') {
+            $result['municipality'] = trim($municipalityText);
+        }
+        if (is_string($countyText) && trim($countyText) !== '') {
+            $result['county'] = trim($countyText);
+        }
+        if (is_string($countryText) && trim($countryText) !== '') {
+            $result['country'] = trim($countryText);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Extract geo coordinates from product.
+     *
+     * @return array{latitude?:string,longitude?:string}
+     */
+    private function extractGeoFromProduct(array $product): array
+    {
+        $geo = $product['geoLocation'] ?? null;
+        if (!is_array($geo)) {
+            return [];
+        }
+
+        $lat = $geo['latitude'] ?? null;
+        $lng = $geo['longitude'] ?? null;
+
+        $result = [];
+        if (is_string($lat) && trim($lat) !== '') {
+            $result['latitude'] = trim($lat);
+        }
+        if (is_string($lng) && trim($lng) !== '') {
+            $result['longitude'] = trim($lng);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Extract contact info from product contactList, with fallback to contactInformation.
+     *
+     * @return array{telephone?:string,email?:string}
+     */
+    private function extractContactFromProduct(array $product): array
+    {
+        $telephone = null;
+        $email = null;
+
+        $contactList = $product['contactList']['contact'] ?? null;
+        if ($contactList !== null) {
+            $contacts = isset($contactList[0]) ? $contactList : [$contactList];
+            foreach ($contacts as $contact) {
+                if (!is_array($contact)) {
+                    continue;
+                }
+                if ($telephone === null) {
+                    $t = $contact['telephone'] ?? null;
+                    if (is_string($t) && trim($t) !== '') {
+                        $telephone = trim($t);
+                    }
+                }
+                if ($email === null) {
+                    $e = $contact['email'] ?? null;
+                    if (is_string($e) && trim($e) !== '') {
+                        $email = trim($e);
+                    }
+                }
+            }
+        }
+
+        if ($telephone === null) {
+            $t = $product['contactInformation']['telephone'] ?? null;
+            if (is_string($t) && trim($t) !== '') {
+                $telephone = trim($t);
+            }
+        }
+
+        $result = [];
+        if ($telephone !== null) {
+            $result['telephone'] = $telephone;
+        }
+        if ($email !== null) {
+            $result['email'] = $email;
+        }
+
+        return $result;
     }
 
     private function fallbackOrganiserFromProduct(array $product): ?string

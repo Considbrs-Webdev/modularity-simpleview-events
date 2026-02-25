@@ -50,6 +50,9 @@ class ApplySimpleviewEventData implements PostDecorator
         $startDate = $wpService->getPostMeta($postId, 'start_date', true) ?: null; // Y-m-d H:i:s (Europe/Stockholm)
         $endDate = $wpService->getPostMeta($postId, 'simpleview_event_end_date', true) ?: null; // Y-m-d H:i:s (Europe/Stockholm), optional
         $locationName = $wpService->getPostMeta($postId, 'simpleview_event_location_name', true) ?: null;
+        $addressJson = $wpService->getPostMeta($postId, 'simpleview_address_json', true) ?: null;
+        $geoJson = $wpService->getPostMeta($postId, 'simpleview_geo_json', true) ?: null;
+        $contactJson = $wpService->getPostMeta($postId, 'simpleview_contact_json', true) ?: null;
         $imageJson = $wpService->getPostMeta($postId, 'simpleview_event_image_json', true) ?: null;
         $image = null;
         $imageHero = null;
@@ -91,6 +94,12 @@ class ApplySimpleviewEventData implements PostDecorator
             }
         }
 
+        $address = $this->parseAddressJson($addressJson);
+        $addressFormatted = $this->formatAddress($address);
+        $geo = $this->parseGeoJson($geoJson);
+        $googleMapsUrl = $this->buildGoogleMapsUrl($geo);
+        $contact = $this->parseContactJson($contactJson);
+
         $date = $startTimestamp ? ['timestamp' => $startTimestamp, 'action' => 'formatDate'] : null;
         $dateBadge = !empty($image) && !empty($startTimestamp);
 
@@ -125,6 +134,10 @@ class ApplySimpleviewEventData implements PostDecorator
             'endTimestamp' => $endTimestamp,
             'dateTimeLabel' => $dateTimeLabel,
             'locationName' => $locationName,
+            'addressFormatted' => $addressFormatted,
+            'address' => $address,
+            'googleMapsUrl' => $googleMapsUrl,
+            'contact' => $contact,
             'image' => $image,
             'imageHero' => $imageHero,
             'date' => $date,
@@ -133,6 +146,92 @@ class ApplySimpleviewEventData implements PostDecorator
         ];
 
         return $post;
+    }
+
+    /**
+     * Parse address JSON meta.
+     *
+     * @return array{street?:string,postalCode?:string,postalArea?:string,municipality?:string,county?:string,country?:string}
+     */
+    private function parseAddressJson(?string $json): array
+    {
+        if (!is_string($json) || $json === '') {
+            return [];
+        }
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Format address for display (e.g. "Storgatan 44, 941 32 Piteå").
+     */
+    private function formatAddress(array $address): ?string
+    {
+        if (empty($address)) {
+            return null;
+        }
+
+        $street = $address['street'] ?? '';
+        $postalCode = trim((string) ($address['postalCode'] ?? ''));
+        $postalArea = trim((string) ($address['postalArea'] ?? ''));
+
+        if ($postalCode !== '' && preg_match('/^\d{5}$/', $postalCode)) {
+            $postalCode = substr($postalCode, 0, 3) . ' ' . substr($postalCode, 3, 2);
+        }
+
+        $parts = [];
+        if ($street !== '') {
+            $parts[] = $street;
+        }
+        if ($postalCode !== '' || $postalArea !== '') {
+            $postal = trim($postalCode . ' ' . $postalArea);
+            if ($postal !== '') {
+                $parts[] = $postal;
+            }
+        }
+
+        return empty($parts) ? null : implode(', ', $parts);
+    }
+
+    /**
+     * Parse geo JSON meta.
+     *
+     * @return array{latitude?:string,longitude?:string}
+     */
+    private function parseGeoJson(?string $json): array
+    {
+        if (!is_string($json) || $json === '') {
+            return [];
+        }
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Build Google Maps URL from coordinates.
+     */
+    private function buildGoogleMapsUrl(array $geo): ?string
+    {
+        $lat = $geo['latitude'] ?? null;
+        $lng = $geo['longitude'] ?? null;
+        if ($lat === null || $lng === null || $lat === '' || $lng === '') {
+            return null;
+        }
+        return 'https://www.google.com/maps?q=' . rawurlencode($lat) . ',' . rawurlencode($lng);
+    }
+
+    /**
+     * Parse contact JSON meta.
+     *
+     * @return object{telephone?:string,email?:string}
+     */
+    private function parseContactJson(?string $json): object
+    {
+        if (!is_string($json) || $json === '') {
+            return (object) [];
+        }
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? (object) $decoded : (object) [];
     }
 
     /**
