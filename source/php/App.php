@@ -32,11 +32,14 @@ class App
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
-        add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
-        add_filter('/Modularity/externalViewPath', [$this, 'addPostsModuleViewPath']);
-        add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
+
+        add_action('parse_query', function() {
+            add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
+            add_filter('/Modularity/externalViewPath', [$this, 'addPostsModuleViewPath']);
+            add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
+        });
 
         new TypesenseSearchIntegration();
     }
