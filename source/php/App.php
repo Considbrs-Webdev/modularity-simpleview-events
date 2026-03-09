@@ -59,6 +59,10 @@ class App
     public function addComponentLibraryViewPaths(array $paths): array
     {
 
+        if (!$this->isSimpleviewEventsContext()) {
+            return $paths;
+        }
+
         $ourPath = rtrim(MODULARITYSIMPLEVIEWEVENTS_PATH . 'views', DIRECTORY_SEPARATOR);
         if (is_dir($ourPath)) {
             array_unshift($paths, $ourPath . DIRECTORY_SEPARATOR);
