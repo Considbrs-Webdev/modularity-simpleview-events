@@ -35,11 +35,11 @@ class App
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
 
-        add_action('parse_query', function() {
-            add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
-            add_filter('/Modularity/externalViewPath', [$this, 'addPostsModuleViewPath']);
-            add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
-        });
+        add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
+        add_filter('/Modularity/externalViewPath', [$this, 'addPostsModuleViewPath']);
+        add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
+
+        add_action('rest_request_before_callbacks', [$this, 'exposePostTypeFromRestAttributes'], 10, 3);
 
         new TypesenseSearchIntegration();
     }
@@ -260,6 +260,7 @@ class App
 
     /**
      * Determine whether the current request should use plugin templates.
+     * Safe to call before the main query is set up (e.g. in ComponentLibrary/ViewPaths).
      *
      * Applies to:
      * - Single pages for any dynamic sv_* post type
@@ -271,6 +272,25 @@ class App
         $postTypes = $this->getRegisteredSimpleviewPostTypes();
 
         if (empty($postTypes)) {
+            return false;
+        }
+
+        // --- Early-safe: no use of get_query_var() or main query ---
+        $postTypeFromRequest = $this->getPostTypeFromRequestForViewPaths();
+        if ($postTypeFromRequest !== null && in_array($postTypeFromRequest, $postTypes, true)) {
+            return true;
+        }
+
+        if (!empty($_SERVER['REQUEST_URI'])) {
+            foreach ($postTypes as $pt) {
+                if (strpos($_SERVER['REQUEST_URI'], $pt) !== false) {
+                    return true;
+                }
+            }
+        }
+
+        // --- Only use query when it is safe ---
+        if (!did_action('wp') && (empty($GLOBALS['wp_query']) || !is_object($GLOBALS['wp_query']))) {
             return false;
         }
 
@@ -292,6 +312,58 @@ class App
         );
 
         return !empty($taxonomies) && is_tax($taxonomies);
+    }
+
+    /**
+     * Get post type from request (GET/POST/attributes JSON) for view-path context.
+     * Safe to call before the main query is set up.
+     *
+     * @return string|null Post type slug or null
+     */
+    private function getPostTypeFromRequestForViewPaths(): ?string
+    {
+        if (!empty($_GET['postType']) && is_string($_GET['postType'])) {
+            return $_GET['postType'];
+        }
+        if (!empty($_POST['postType']) && is_string($_POST['postType'])) {
+            return $_POST['postType'];
+        }
+        $raw = $_GET['attributes'] ?? $_POST['attributes'] ?? null;
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) && !empty($decoded['postType']) && is_string($decoded['postType'])) {
+                return $decoded['postType'];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Set $_GET['postType'] from REST request attributes so view-path logic sees it.
+     * Runs before the posts-list/render callback.
+     *
+     * @param mixed $response
+     * @param array $handler
+     * @param \WP_REST_Request $request
+     * @return mixed
+     */
+    public function exposePostTypeFromRestAttributes($response, $handler, $request)
+    {
+        if (!$request instanceof \WP_REST_Request) {
+            return $response;
+        }
+        $route = $request->get_route();
+        if ($route === null || strpos($route, 'posts-list/render') === false) {
+            return $response;
+        }
+        $attrs = $request->get_param('attributes');
+        if (is_string($attrs)) {
+            $attrs = json_decode($attrs, true);
+        }
+        if (is_array($attrs) && !empty($attrs['postType'])) {
+            $_GET['postType'] = $attrs['postType'];
+        }
+        return $response;
     }
 
 
