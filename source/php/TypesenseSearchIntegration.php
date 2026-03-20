@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ModularitySimpleviewEvents;
 
+use ModularitySimpleviewEvents\Helper\CacheBust;
+
 /**
  * Integrates Simpleview events with Typesense search indexing.
  *
@@ -28,6 +30,26 @@ class TypesenseSearchIntegration
         add_filter('Municipio/TypesenseSearch/hitTemplateView', [$this, 'resolveHitTemplateView'], 10, 2);
         add_filter('Municipio/TypesenseSearch/postTypeToTemplate', [$this, 'mapPostTypesToTemplate']);
         add_filter('Municipio/TypesenseSearch/placeholderMappings', [$this, 'addPlaceholderMappings']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueueStylesOnSearch'], 20);
+    }
+
+    /**
+     * Enqueue styles on search so Typesense hit templates match archive/module cards.
+     */
+    public function enqueueStylesOnSearch(): void
+    {
+        if (!is_search()) {
+            return;
+        }
+        $styleFile = CacheBust::name('css/modularity-simpleview-events.css');
+        if ($styleFile) {
+            wp_enqueue_style(
+                'modularity-simpleview-events',
+                MODULARITYSIMPLEVIEWEVENTS_URL . '/assets/dist/' . $styleFile,
+                [],
+                null
+            );
+        }
     }
 
     /**

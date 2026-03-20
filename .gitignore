@@ -1,3 +1,4 @@
 debug.log
 simpleview*.json
 vendor/
+node_modules/

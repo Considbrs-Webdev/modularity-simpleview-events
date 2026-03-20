@@ -8,6 +8,7 @@ use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
 use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
 use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
 use ModularitySimpleviewEvents\ApplyDecorator\ApplySimpleviewEventData;
+use ModularitySimpleviewEvents\Helper\CacheBust;
 
 /**
  * Class App
@@ -41,7 +42,26 @@ class App
 
         add_action('rest_request_before_callbacks', [$this, 'exposePostTypeFromRestAttributes'], 10, 3);
 
+        add_action('wp_enqueue_scripts', [$this, 'enqueueStyles']);
+
         new TypesenseSearchIntegration();
+    }
+
+    /**
+     * Enqueue front-end styles (card tokens, meta layout).
+     */
+    public function enqueueStyles(): void
+    {
+        $styleFile = CacheBust::name('css/modularity-simpleview-events.css');
+
+        if ($styleFile) {
+            wp_enqueue_style(
+                'modularity-simpleview-events',
+                MODULARITYSIMPLEVIEWEVENTS_URL . '/assets/dist/' . $styleFile,
+                [],
+                null
+            );
+        }
     }
 
     /**
