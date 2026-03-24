@@ -2,6 +2,7 @@
 
 @section('loop')
     @if (!empty($post))
+        {!! $hook->innerLoopStart !!}
         @if (!empty($post->simpleviewEventData))
             {{-- Card used only for image + date badge (no link, no heading, no content) --}}
             @card([
@@ -65,5 +66,6 @@
                     array_merge((array) ($signature ?? []), ['classList' => []]))
             @endsection
         @endelement
+        {!! $hook->innerLoopEnd !!}
     @endif
 @stop
