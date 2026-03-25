@@ -26,6 +26,7 @@ class ArchivedPostStatus
             'show_in_admin_all_list' => true,
             'show_in_admin_status_list' => true,
             'label_count' => _n_noop(
+                /* translators: %s: Number of archived posts. */
                 'Archived <span class="count">(%s)</span>',
                 'Archived <span class="count">(%s)</span>',
                 'modularity-simpleview-events'

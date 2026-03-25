@@ -101,7 +101,12 @@ class SimpleviewClient
             $message = wp_remote_retrieve_response_message($response);
             return new \WP_Error(
                 'api_error',
-                sprintf(__('API request failed with status %d: %s', 'modularity-simpleview-events'), $statusCode, $message)
+                sprintf(
+                    /* translators: 1: HTTP status code, 2: Response message text. */
+                    __('API request failed with status %1$d: %2$s', 'modularity-simpleview-events'),
+                    $statusCode,
+                    $message
+                )
             );
         }
 

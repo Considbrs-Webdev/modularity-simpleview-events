@@ -60,7 +60,8 @@ class Settings
             ]);
         } else {
             $message = sprintf(
-                __('Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned', 'modularity-simpleview-events'),
+                /* translators: 1: Created posts, 2: Updated, 3: Archived, 4: Restored, 5: Pruned. */
+                __('Sync completed: %1$d created, %2$d updated, %3$d archived, %4$d restored, %5$d pruned', 'modularity-simpleview-events'),
                 $result['created'] ?? 0,
                 $result['updated'] ?? 0,
                 $result['archived'] ?? 0,
@@ -69,11 +70,19 @@ class Settings
             );
 
             if (!empty($result['warnings'] ?? [])) {
-                $message .= '. ' . sprintf(__('Warnings: %d', 'modularity-simpleview-events'), count($result['warnings']));
+                $message .= '. ' . sprintf(
+                    /* translators: %d: Number of warnings. */
+                    __('Warnings: %d', 'modularity-simpleview-events'),
+                    count($result['warnings'])
+                );
             }
 
             if (!empty($result['errors'] ?? [])) {
-                $message .= '. ' . sprintf(__('Errors: %d', 'modularity-simpleview-events'), count($result['errors']));
+                $message .= '. ' . sprintf(
+                    /* translators: %d: Number of errors. */
+                    __('Errors: %d', 'modularity-simpleview-events'),
+                    count($result['errors'])
+                );
             }
 
             wp_send_json_success([

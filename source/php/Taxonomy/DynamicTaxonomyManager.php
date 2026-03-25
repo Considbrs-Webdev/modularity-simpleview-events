@@ -23,10 +23,26 @@ class DynamicTaxonomyManager
         $taxonomySlug = $this->getTaxonomySlug($postTypeSlug);
 
         $labels = [
-            'name'                       => sprintf(__('%s Categories', 'modularity-simpleview-events'), $mediaChannelName),
-            'singular_name'              => sprintf(__('%s Category', 'modularity-simpleview-events'), $mediaChannelName),
-            'menu_name'                  => sprintf(__('%s Categories', 'modularity-simpleview-events'), $mediaChannelName),
-            'all_items'                  => sprintf(__('All %s Categories', 'modularity-simpleview-events'), $mediaChannelName),
+            'name'                       => sprintf(
+                /* translators: %s: Media channel name. */
+                __('%s Categories', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'singular_name'              => sprintf(
+                /* translators: %s: Media channel name. */
+                __('%s Category', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'menu_name'                  => sprintf(
+                /* translators: %s: Media channel name. */
+                __('%s Categories', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'all_items'                  => sprintf(
+                /* translators: %s: Media channel name. */
+                __('All %s Categories', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
             'parent_item'                => __('Parent Category', 'modularity-simpleview-events'),
             'parent_item_colon'          => __('Parent Category:', 'modularity-simpleview-events'),
             'new_item_name'              => __('New Category Name', 'modularity-simpleview-events'),
@@ -47,7 +63,11 @@ class DynamicTaxonomyManager
 
         $args = [
             'labels'            => $labels,
-            'description'       => sprintf(__('Categories for %s events', 'modularity-simpleview-events'), $mediaChannelName),
+            'description'       => sprintf(
+                /* translators: %s: Media channel name. */
+                __('Categories for %s events', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
             'hierarchical'      => false, // Categories are flat (no parent-child relationship needed)
             'public'            => true,
             'show_ui'           => true,

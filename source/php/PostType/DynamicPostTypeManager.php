@@ -34,29 +34,89 @@ class DynamicPostTypeManager
             'menu_name'             => $mediaChannelName,
             'name_admin_bar'        => $mediaChannelName,
             'add_new'               => __('Add New', 'modularity-simpleview-events'),
-            'add_new_item'          => sprintf(__('Add New %s', 'modularity-simpleview-events'), $mediaChannelName),
-            'new_item'              => sprintf(__('New %s', 'modularity-simpleview-events'), $mediaChannelName),
-            'edit_item'             => sprintf(__('Edit %s', 'modularity-simpleview-events'), $mediaChannelName),
-            'view_item'             => sprintf(__('View %s', 'modularity-simpleview-events'), $mediaChannelName),
-            'all_items'             => sprintf(__('All %s', 'modularity-simpleview-events'), $mediaChannelName),
-            'search_items'          => sprintf(__('Search %s', 'modularity-simpleview-events'), $mediaChannelName),
-            'parent_item_colon'     => sprintf(__('Parent %s:', 'modularity-simpleview-events'), $mediaChannelName),
-            'not_found'             => sprintf(__('No %s found.', 'modularity-simpleview-events'), strtolower($mediaChannelName)),
-            'not_found_in_trash'    => sprintf(__('No %s found in Trash.', 'modularity-simpleview-events'), strtolower($mediaChannelName)),
+            'add_new_item'          => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('Add New %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'new_item'              => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('New %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'edit_item'             => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('Edit %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'view_item'             => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('View %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'all_items'             => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('All %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'search_items'          => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('Search %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'parent_item_colon'     => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('Parent %s:', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'not_found'             => sprintf(
+                /* translators: %s: Media channel (post type) name (lowercase). */
+                __('No %s found.', 'modularity-simpleview-events'),
+                strtolower($mediaChannelName)
+            ),
+            'not_found_in_trash'    => sprintf(
+                /* translators: %s: Media channel (post type) name (lowercase). */
+                __('No %s found in Trash.', 'modularity-simpleview-events'),
+                strtolower($mediaChannelName)
+            ),
             'featured_image'        => __('Featured Image', 'modularity-simpleview-events'),
             'set_featured_image'    => __('Set featured image', 'modularity-simpleview-events'),
             'remove_featured_image' => __('Remove featured image', 'modularity-simpleview-events'),
             'use_featured_image'    => __('Use as featured image', 'modularity-simpleview-events'),
-            'insert_into_item'      => sprintf(__('Insert into %s', 'modularity-simpleview-events'), strtolower($mediaChannelName)),
-            'uploaded_to_this_item' => sprintf(__('Uploaded to this %s', 'modularity-simpleview-events'), strtolower($mediaChannelName)),
-            'filter_items_list'     => sprintf(__('Filter %s list', 'modularity-simpleview-events'), strtolower($mediaChannelName)),
-            'items_list_navigation' => sprintf(__('%s list navigation', 'modularity-simpleview-events'), $mediaChannelName),
-            'items_list'            => sprintf(__('%s list', 'modularity-simpleview-events'), $mediaChannelName),
+            'insert_into_item'      => sprintf(
+                /* translators: %s: Media channel (post type) name (lowercase). */
+                __('Insert into %s', 'modularity-simpleview-events'),
+                strtolower($mediaChannelName)
+            ),
+            'uploaded_to_this_item' => sprintf(
+                /* translators: %s: Media channel (post type) name (lowercase). */
+                __('Uploaded to this %s', 'modularity-simpleview-events'),
+                strtolower($mediaChannelName)
+            ),
+            'filter_items_list'     => sprintf(
+                /* translators: %s: Media channel (post type) name (lowercase). */
+                __('Filter %s list', 'modularity-simpleview-events'),
+                strtolower($mediaChannelName)
+            ),
+            'items_list_navigation' => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('%s list navigation', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
+            'items_list'            => sprintf(
+                /* translators: %s: Media channel (post type) name. */
+                __('%s list', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
         ];
 
         $args = [
             'labels'             => $labels,
-            'description'        => sprintf(__('Events synced from Simpleview API for %s', 'modularity-simpleview-events'), $mediaChannelName),
+            'description'        => sprintf(
+                /* translators: %s: Media channel name. */
+                __('Events synced from Simpleview API for %s', 'modularity-simpleview-events'),
+                $mediaChannelName
+            ),
             'public'             => true,
             'publicly_queryable' => true,
             'show_ui'            => true,

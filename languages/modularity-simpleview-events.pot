@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-02-24T14:47:02+01:00\n"
+"POT-Creation-Date: 2026-03-25T16:46:52+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: modularity-simpleview-events\n"
@@ -39,76 +39,84 @@ msgstr ""
 msgid "https://github.com/helsingborg-stad"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:8
+#: source/php/AcfFields/php/general-settings.php:6
 #: source/php/Admin/Settings.php:31
 msgid "Simpleview Events Settings"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:12
+#: source/php/AcfFields/php/general-settings.php:10
 msgid "API Base URL"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:16
-msgid "The base URL for the Simpleview API endpoint."
+#: source/php/AcfFields/php/general-settings.php:14
+msgid "The base URL for the Simpleview API endpoint (without query parameters)."
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:25
-msgid "https://api.simpleview.com"
+#: source/php/AcfFields/php/general-settings.php:27
+msgid "API Key (LicenceKey)"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:29
-msgid "API Key"
+#: source/php/AcfFields/php/general-settings.php:31
+msgid "The LicenceKey for authenticating with the Simpleview API."
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:33
-msgid "The API key for authenticating with Simpleview API."
+#: source/php/AcfFields/php/general-settings.php:46
+msgid "DB Owner ID List"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:48
-msgid "Sync Frequency"
+#: source/php/AcfFields/php/general-settings.php:50
+msgid "The DBOwnerIdList parameter sent to the API (e.g. \"143\")."
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:52
-msgid "How often to automatically sync events from Simpleview API."
+#: source/php/AcfFields/php/general-settings.php:65
+msgid "Distribution Channel ID"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:61
-msgid "Hourly"
+#: source/php/AcfFields/php/general-settings.php:69
+msgid "The DistributionChannelId parameter sent to the API (e.g. \"634573\")."
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:62
-msgid "Twice Daily"
+#: source/php/AcfFields/php/general-settings.php:84
+msgid "Language ID"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:63
-msgid "Daily"
-msgstr ""
-
-#: source/php/AcfFields/php/general-settings.php:79
-msgid "Use Mock Data"
-msgstr ""
-
-#: source/php/AcfFields/php/general-settings.php:83
-msgid "Use local mock JSON file instead of API. Enable this to test with mock data before switching to the live API."
-msgstr ""
-
-#: source/php/AcfFields/php/general-settings.php:99
-msgid "Archive Retention Days"
+#: source/php/AcfFields/php/general-settings.php:88
+msgid "The LanguageId parameter (e.g. \"sv\" for Swedish)."
 msgstr ""
 
 #: source/php/AcfFields/php/general-settings.php:103
+msgid "Country ID"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:107
+msgid "The CountryId parameter (e.g. \"SE\" for Sweden)."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:122
+msgid "Test Connection"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:126
+msgid "Save settings first, then test the connection to verify your API configuration. Shows which media channels are available."
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:140
+msgid "Archive Retention Days"
+msgstr ""
+
+#: source/php/AcfFields/php/general-settings.php:144
 msgid "Number of days to keep archived posts before permanent deletion. Posts removed from the API will be archived, then deleted after this period."
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:117
+#: source/php/AcfFields/php/general-settings.php:158
 msgid "days"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:121
+#: source/php/AcfFields/php/general-settings.php:162
 msgid "Manual Sync"
 msgstr ""
 
-#: source/php/AcfFields/php/general-settings.php:133
+#: source/php/AcfFields/php/general-settings.php:174
 msgid "<button type=\"button\" id=\"simpleview-events-manual-sync\" class=\"button button-primary\">Sync Now</button>"
 msgstr ""
 
@@ -117,86 +125,104 @@ msgid "Simpleview Events"
 msgstr ""
 
 #: source/php/Admin/Settings.php:51
+#: source/php/Admin/Settings.php:106
 msgid "Unauthorized"
 msgstr ""
 
-#: source/php/Admin/Settings.php:66
+#. translators: 1: Created posts, 2: Updated, 3: Archived, 4: Restored, 5: Pruned.
+#: source/php/Admin/Settings.php:64
 #, php-format
-msgid "Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned"
+msgid "Sync completed: %1$d created, %2$d updated, %3$d archived, %4$d restored, %5$d pruned"
 msgstr ""
 
+#. translators: %d: Number of warnings.
 #: source/php/Admin/Settings.php:75
 #, php-format
 msgid "Warnings: %d"
 msgstr ""
 
-#: source/php/Admin/Settings.php:79
+#. translators: %d: Number of errors.
+#: source/php/Admin/Settings.php:83
 #, php-format
 msgid "Errors: %d"
 msgstr ""
 
-#: source/php/Admin/Settings.php:89
-msgid "Synchronizer class not found"
-msgstr ""
-
-#: source/php/Admin/Settings.php:212
+#: source/php/Admin/Settings.php:162
 msgid "Syncing..."
 msgstr ""
 
-#: source/php/Admin/Settings.php:227
-msgid "Sync completed successfully"
+#: source/php/Admin/Settings.php:172
+msgid "Sync completed"
 msgstr ""
 
-#: source/php/Admin/Settings.php:255
+#: source/php/Admin/Settings.php:187
 msgid "Sync failed:"
 msgstr ""
 
-#: source/php/Admin/Settings.php:259
+#: source/php/Admin/Settings.php:191
 msgid "Error during sync:"
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:81
-msgid "Mock data file not found at: "
+#: source/php/Admin/Settings.php:211
+msgid "Testing..."
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:90
-msgid "Failed to read mock data file"
+#: source/php/Admin/Settings.php:226
+msgid "Connection successful!"
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:99
-msgid "Failed to parse mock data: "
+#: source/php/Admin/Settings.php:227
+msgid "Total products:"
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:121
-#: source/php/Api/SimpleviewClient.php:186
+#: source/php/Admin/Settings.php:230
+msgid "Media channels (WEBSITECONTENT):"
+msgstr ""
+
+#: source/php/Admin/Settings.php:232
+msgid "Name"
+msgstr ""
+
+#: source/php/Admin/Settings.php:232
+msgid "Products"
+msgstr ""
+
+#: source/php/Admin/Settings.php:238
+msgid "No WEBSITECONTENT media channels found."
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:77
 msgid "API credentials are not configured"
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:148
+#. translators: 1: HTTP status code, 2: Response message text.
+#: source/php/Api/SimpleviewClient.php:106
 #, php-format
-msgid "API request failed with status %d: %s"
+msgid "API request failed with status %1$d: %2$s"
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:158
+#: source/php/Api/SimpleviewClient.php:119
 msgid "Failed to parse API response"
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:177
-msgid "Mock data file not found"
+#: source/php/Api/SimpleviewClient.php:136
+msgid "API credentials are not configured. Please fill in Base URL and API Key."
 msgstr ""
 
-#: source/php/Api/SimpleviewClient.php:195
-msgid "API request failed: "
-msgstr ""
-
-#: source/php/Api/SimpleviewClient.php:202
+#: source/php/Api/SimpleviewClient.php:149
 msgid "API returned empty response"
+msgstr ""
+
+#: source/php/Api/SimpleviewClient.php:156
+#: source/php/Sync/ApiResponseValidator.php:42
+msgid "API response missing productList.product structure"
 msgstr ""
 
 #: source/php/PostStatus/ArchivedPostStatus.php:23
 msgid "Archived"
 msgstr ""
 
+#. translators: %s: Number of archived posts.
 #: source/php/PostStatus/ArchivedPostStatus.php:28
 #, php-format
 msgid "Archived <span class=\"count\">(%s)</span>"
@@ -208,93 +234,108 @@ msgstr[1] ""
 msgid "Add New"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:37
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:39
 #, php-format
 msgid "Add New %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:38
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:44
 #, php-format
 msgid "New %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:39
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:49
 #, php-format
 msgid "Edit %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:40
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:54
 #, php-format
 msgid "View %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:41
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:59
 #, php-format
 msgid "All %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:42
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:64
 #, php-format
 msgid "Search %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:43
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:69
 #, php-format
 msgid "Parent %s:"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:44
+#. translators: %s: Media channel (post type) name (lowercase).
+#: source/php/PostType/DynamicPostTypeManager.php:74
 #, php-format
 msgid "No %s found."
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:45
+#. translators: %s: Media channel (post type) name (lowercase).
+#: source/php/PostType/DynamicPostTypeManager.php:79
 #, php-format
 msgid "No %s found in Trash."
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:46
+#: source/php/PostType/DynamicPostTypeManager.php:82
 msgid "Featured Image"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:47
+#: source/php/PostType/DynamicPostTypeManager.php:83
 msgid "Set featured image"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:48
+#: source/php/PostType/DynamicPostTypeManager.php:84
 msgid "Remove featured image"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:49
+#: source/php/PostType/DynamicPostTypeManager.php:85
 msgid "Use as featured image"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:50
+#. translators: %s: Media channel (post type) name (lowercase).
+#: source/php/PostType/DynamicPostTypeManager.php:88
 #, php-format
 msgid "Insert into %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:51
+#. translators: %s: Media channel (post type) name (lowercase).
+#: source/php/PostType/DynamicPostTypeManager.php:93
 #, php-format
 msgid "Uploaded to this %s"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:52
+#. translators: %s: Media channel (post type) name (lowercase).
+#: source/php/PostType/DynamicPostTypeManager.php:98
 #, php-format
 msgid "Filter %s list"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:53
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:103
 #, php-format
 msgid "%s list navigation"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:54
+#. translators: %s: Media channel (post type) name.
+#: source/php/PostType/DynamicPostTypeManager.php:108
 #, php-format
 msgid "%s list"
 msgstr ""
 
-#: source/php/PostType/DynamicPostTypeManager.php:59
+#. translators: %s: Media channel name.
+#: source/php/PostType/DynamicPostTypeManager.php:117
 #, php-format
 msgid "Events synced from Simpleview API for %s"
 msgstr ""
@@ -303,116 +344,121 @@ msgstr ""
 msgid "API response is empty"
 msgstr ""
 
-#: source/php/Sync/ApiResponseValidator.php:42
-msgid "API response missing productList.product structure"
-msgstr ""
-
 #: source/php/Sync/ApiResponseValidator.php:61
 msgid "API response contains zero products"
 msgstr ""
 
-#: source/php/Sync/ApiResponseValidator.php:73
+#. translators: 1: Current product count, 2: Previous product count.
+#: source/php/Sync/ApiResponseValidator.php:74
 #, php-format
-msgid "Product count dropped significantly: %d products (was %d). This may indicate an API issue, but sync will proceed."
+msgid "Product count dropped significantly: %1$d products (was %2$d). This may indicate an API issue, but sync will proceed."
 msgstr ""
 
-#: source/php/Sync/EventSynchronizer.php:69
+#: source/php/Sync/EventSynchronizer.php:68
+msgid "Simpleview Events Sync is already in progress"
+msgstr ""
+
+#: source/php/Sync/EventSynchronizer.php:78
 msgid "Simpleview API credentials are not configured"
 msgstr ""
 
-#: source/php/Sync/EventSynchronizer.php:96
+#: source/php/Sync/EventSynchronizer.php:105
 msgid "No products returned from API"
 msgstr ""
 
-#: source/php/Sync/PostMapper.php:41
+#: source/php/Sync/PostMapper.php:56
 msgid "Untitled Event"
 msgstr ""
 
-#: source/php/Sync/PostMapper.php:146
+#: source/php/Sync/PostMapper.php:173
 msgid "Event data missing Simpleview ID"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:26
+#. translators: %s: Media channel name.
 #: source/php/Taxonomy/DynamicTaxonomyManager.php:28
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:38
 #, php-format
 msgid "%s Categories"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:27
+#. translators: %s: Media channel name.
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:33
 #, php-format
 msgid "%s Category"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:29
+#. translators: %s: Media channel name.
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:43
 #, php-format
 msgid "All %s Categories"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:30
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:46
 msgid "Parent Category"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:31
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:47
 msgid "Parent Category:"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:32
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:48
 msgid "New Category Name"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:33
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:49
 msgid "Add New Category"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:34
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:50
 msgid "Edit Category"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:35
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:51
 msgid "Update Category"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:36
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:52
 msgid "View Category"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:37
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:53
 msgid "Separate categories with commas"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:38
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:54
 msgid "Add or remove categories"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:39
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:55
 msgid "Choose from the most used"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:40
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:56
 msgid "Popular Categories"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:41
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:57
 msgid "Search Categories"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:42
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:58
 msgid "Not Found"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:43
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:59
 msgid "No categories"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:44
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:60
 msgid "Categories list"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:45
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:61
 msgid "Categories list navigation"
 msgstr ""
 
-#: source/php/Taxonomy/DynamicTaxonomyManager.php:50
+#. translators: %s: Media channel name.
+#: source/php/Taxonomy/DynamicTaxonomyManager.php:68
 #, php-format
 msgid "Categories for %s events"
 msgstr ""

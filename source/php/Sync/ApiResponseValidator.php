@@ -70,7 +70,8 @@ class ApiResponseValidator
             
             if ($dropPercentage > self::DRASTIC_DROP_THRESHOLD) {
                 $result['warnings'][] = sprintf(
-                    __('Product count dropped significantly: %d products (was %d). This may indicate an API issue, but sync will proceed.', 'modularity-simpleview-events'),
+                    /* translators: 1: Current product count, 2: Previous product count. */
+                    __('Product count dropped significantly: %1$d products (was %2$d). This may indicate an API issue, but sync will proceed.', 'modularity-simpleview-events'),
                     $productCount,
                     $lastProductCount
                 );
