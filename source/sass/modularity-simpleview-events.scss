@@ -11,6 +11,10 @@
   background: var(--simpleview-card-background);
   border-radius: var(--simpleview-card-border-radius);
 
+  &:hover {
+    background: var(--simpleview-card-background);
+  }
+
   .c-simpleview-event-card__meta {
     margin: 0;
     padding: 0;
