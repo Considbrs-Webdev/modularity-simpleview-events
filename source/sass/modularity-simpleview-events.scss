@@ -58,12 +58,12 @@
 
       .c-datebadge__date {
         font-size: 18px;
-        font-weight: 700;
+        font-weight: var(--font-weight-bold, 700);
       }
 
       .c-datebadge__month {
         font-size: 18px;
-        font-weight: 700;
+        font-weight: var(--font-weight-bold, 700);
       }
     }
   }
