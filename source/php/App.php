@@ -3,7 +3,6 @@
 namespace ModularitySimpleviewEvents;
 
 use ModularitySimpleviewEvents\Admin\Settings;
-use ModularitySimpleviewEvents\Cron\SyncScheduler;
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
 use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
 use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
@@ -27,8 +26,6 @@ class App
     public function __construct()
     {
         new Settings();
-
-        new SyncScheduler();
 
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);

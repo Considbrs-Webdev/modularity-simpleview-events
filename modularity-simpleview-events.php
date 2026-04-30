@@ -64,12 +64,6 @@ register_deactivation_hook(__FILE__, function () {
         require_once MODULARITYSIMPLEVIEWEVENTS_PATH . 'vendor/autoload.php';
     }
 
-    // Clear cron events
-    if (class_exists('ModularitySimpleviewEvents\Cron\SyncScheduler')) {
-        $scheduler = new ModularitySimpleviewEvents\Cron\SyncScheduler();
-        $scheduler->unschedule();
-    }
-
     flush_rewrite_rules();
 });
 
