@@ -150,6 +150,68 @@ class Settings
                 var syncNonce = <?php echo json_encode($syncNonce); ?>;
                 var testNonce = <?php echo json_encode($testNonce); ?>;
 
+                function clearElement(element) {
+                    while (element.firstChild) {
+                        element.removeChild(element.firstChild);
+                    }
+                }
+
+                function createNotice(type) {
+                    var notice = document.createElement('div');
+                    notice.className = 'notice notice-' + type + ' inline';
+                    notice.style.margin = '8px 0';
+                    notice.style.padding = '8px 12px';
+                    return notice;
+                }
+
+                function appendParagraph(parent, text, strong) {
+                    var paragraph = document.createElement('p');
+                    if (strong) {
+                        var strongElement = document.createElement('strong');
+                        strongElement.textContent = text;
+                        paragraph.appendChild(strongElement);
+                    } else {
+                        paragraph.textContent = text;
+                    }
+                    parent.appendChild(paragraph);
+                    return paragraph;
+                }
+
+                function appendMediaChannelsTable(parent, mediaChannels) {
+                    var table = document.createElement('table');
+                    table.className = 'widefat striped';
+                    table.style.maxWidth = '500px';
+
+                    var thead = document.createElement('thead');
+                    var headerRow = document.createElement('tr');
+                    ['ID', '<?php echo esc_js(__('Name', 'modularity-simpleview-events')); ?>', '<?php echo esc_js(__('Products', 'modularity-simpleview-events')); ?>'].forEach(function(label) {
+                        var th = document.createElement('th');
+                        th.textContent = label;
+                        headerRow.appendChild(th);
+                    });
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    var tbody = document.createElement('tbody');
+                    mediaChannels.forEach(function(mc) {
+                        var row = document.createElement('tr');
+                        [mc.id, mc.name, mc.products].forEach(function(value, index) {
+                            var cell = document.createElement('td');
+                            if (index === 1) {
+                                var strong = document.createElement('strong');
+                                strong.textContent = value;
+                                cell.appendChild(strong);
+                            } else {
+                                cell.textContent = value;
+                            }
+                            row.appendChild(cell);
+                        });
+                        tbody.appendChild(row);
+                    });
+                    table.appendChild(tbody);
+                    parent.appendChild(table);
+                }
+
                 function initManualSync() {
                     var syncButton = document.getElementById('simpleview-events-manual-sync');
                     if (!syncButton) return;
@@ -209,7 +271,7 @@ class Settings
                         var originalText = button.textContent;
                         button.disabled = true;
                         button.textContent = '<?php echo esc_js(__('Testing...', 'modularity-simpleview-events')); ?>';
-                        if (resultDiv) resultDiv.innerHTML = '';
+                        if (resultDiv) clearElement(resultDiv);
 
                         var formData = new FormData();
                         formData.append('action', 'simpleview_events_test_connection');
@@ -222,30 +284,29 @@ class Settings
 
                                 if (data.success) {
                                     var d = data.data;
-                                    var html = '<div class="notice notice-success inline" style="margin:8px 0;padding:8px 12px;">';
-                                    html += '<p><strong><?php echo esc_js(__('Connection successful!', 'modularity-simpleview-events')); ?></strong></p>';
-                                    html += '<p><?php echo esc_js(__('Total products:', 'modularity-simpleview-events')); ?> ' + d.product_count + '</p>';
+                                    var successNotice = createNotice('success');
+                                    appendParagraph(successNotice, '<?php echo esc_js(__('Connection successful!', 'modularity-simpleview-events')); ?>', true);
+                                    appendParagraph(successNotice, '<?php echo esc_js(__('Total products:', 'modularity-simpleview-events')); ?> ' + d.product_count, false);
 
                                     if (d.media_channels && d.media_channels.length > 0) {
-                                        html += '<p><strong><?php echo esc_js(__('Media channels (WEBSITECONTENT):', 'modularity-simpleview-events')); ?></strong></p>';
-                                        html += '<table class="widefat striped" style="max-width:500px;">';
-                                        html += '<thead><tr><th>ID</th><th><?php echo esc_js(__('Name', 'modularity-simpleview-events')); ?></th><th><?php echo esc_js(__('Products', 'modularity-simpleview-events')); ?></th></tr></thead><tbody>';
-                                        d.media_channels.forEach(function(mc) {
-                                            html += '<tr><td>' + mc.id + '</td><td><strong>' + mc.name + '</strong></td><td>' + mc.products + '</td></tr>';
-                                        });
-                                        html += '</tbody></table>';
+                                        appendParagraph(successNotice, '<?php echo esc_js(__('Media channels (WEBSITECONTENT):', 'modularity-simpleview-events')); ?>', true);
+                                        appendMediaChannelsTable(successNotice, d.media_channels);
                                     } else {
-                                        html += '<p><?php echo esc_js(__('No WEBSITECONTENT media channels found.', 'modularity-simpleview-events')); ?></p>';
+                                        appendParagraph(successNotice, '<?php echo esc_js(__('No WEBSITECONTENT media channels found.', 'modularity-simpleview-events')); ?>', false);
                                     }
-                                    html += '</div>';
-                                    resultDiv.innerHTML = html;
+                                    resultDiv.appendChild(successNotice);
                                 } else {
-                                    resultDiv.innerHTML = '<div class="notice notice-error inline" style="margin:8px 0;padding:8px 12px;"><p>' + (data.data?.message || 'Unknown error') + '</p></div>';
+                                    var errorNotice = createNotice('error');
+                                    appendParagraph(errorNotice, data.data?.message || 'Unknown error', false);
+                                    resultDiv.appendChild(errorNotice);
                                 }
                             })
                             .catch(function(err) {
                                 if (resultDiv) {
-                                    resultDiv.innerHTML = '<div class="notice notice-error inline" style="margin:8px 0;padding:8px 12px;"><p>' + err.message + '</p></div>';
+                                    clearElement(resultDiv);
+                                    var errorNotice = createNotice('error');
+                                    appendParagraph(errorNotice, err.message, false);
+                                    resultDiv.appendChild(errorNotice);
                                 }
                             })
                             .finally(function() {

@@ -117,6 +117,7 @@ class DataWiper
         // Clear tracking options
         delete_option('simpleview_events_registered_post_types');
         delete_option('simpleview_events_last_sync');
+        delete_option('simpleview_events_last_product_count');
 
         return $stats;
     }

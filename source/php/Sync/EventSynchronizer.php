@@ -107,6 +107,13 @@ class EventSynchronizer
             }
 
             $groupedProducts = $this->groupProductsByMediaChannel($products);
+            if (empty($groupedProducts)) {
+                return new \WP_Error(
+                    'no_media_channels',
+                    __('No Simpleview products with WEBSITECONTENT media channels were found in the API response', 'modularity-simpleview-events')
+                );
+            }
+
             $activePostTypeSlugs = array_keys($groupedProducts);
 
             $results = [
@@ -117,6 +124,7 @@ class EventSynchronizer
                 'pruned' => 0,
                 'errors' => [],
                 'warnings' => $validation['warnings'] ?? [],
+                'product_count' => $validation['product_count'] ?? 0,
                 'post_types' => [],
             ];
 
@@ -150,6 +158,7 @@ class EventSynchronizer
 
             $this->postTypeManager->cleanupUnusedPostTypes($activePostTypeSlugs);
             update_option('simpleview_events_last_sync', current_time('mysql'));
+            $this->validator->recordSuccessfulProductCount((int) ($validation['product_count'] ?? 0));
 
             error_log(sprintf(
                 'Simpleview Events Sync completed: %d created, %d updated, %d archived, %d restored, %d pruned, %d errors across %d post types',
@@ -293,7 +302,7 @@ class EventSynchronizer
         $taxonomySlug = $this->taxonomyManager->registerCategoryTaxonomyForPostType($postTypeSlug, $mediaChannelName);
         $categories = $this->taxonomyMapper->syncCategories($products, $taxonomySlug, $postTypeSlug);
         $existingPostIds = $this->getExistingPostIds($postTypeSlug);
-        $syncedPostIds = [];
+        $seenPostIds = [];
 
         $results = [
             'created' => 0,
@@ -308,6 +317,9 @@ class EventSynchronizer
             $simpleviewId = $productData['@id'] ?? $productData['id'] ?? '';
             $existingPostId = $this->postMapper->findExistingPost((string) $simpleviewId, $postTypeSlug);
             $wasArchived = $existingPostId && $this->postArchiver->isArchived($existingPostId);
+            if ($existingPostId) {
+                $seenPostIds[] = $existingPostId;
+            }
 
             $result = $this->postMapper->createOrUpdatePost($productData, $postTypeSlug, $taxonomySlug, $categories, $mediaChannelName, $mediaChannelId);
 
@@ -325,7 +337,7 @@ class EventSynchronizer
             } else {
                 $postId = $result['post_id'];
                 $action = $result['action'];
-                $syncedPostIds[] = $postId;
+                $seenPostIds[] = $postId;
 
                 if ($action === 'created') {
                     $results['created']++;
@@ -337,7 +349,7 @@ class EventSynchronizer
             }
         }
 
-        $postsToArchive = array_diff($existingPostIds, $syncedPostIds);
+        $postsToArchive = array_diff($existingPostIds, array_unique($seenPostIds));
         foreach ($postsToArchive as $postId) {
             if (!$this->postArchiver->isArchived($postId)) {
                 if ($this->postArchiver->archivePost($postId)) {

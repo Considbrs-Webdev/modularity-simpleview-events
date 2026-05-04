@@ -26,6 +26,7 @@ class ApiResponseValidator
         $result = [
             'valid' => true,
             'warnings' => [],
+            'product_count' => 0,
         ];
 
         // Hard fail checks - abort sync if these fail
@@ -78,10 +79,20 @@ class ApiResponseValidator
             }
         }
 
-        // Save current count for next validation
-        update_option(self::OPTION_KEY_LAST_PRODUCT_COUNT, $productCount);
+        $result['product_count'] = $productCount;
 
         return $result;
+    }
+
+    /**
+     * Save the product count after a completed sync.
+     * 
+     * @param int $productCount Product count from the successful API response
+     * @return void
+     */
+    public function recordSuccessfulProductCount(int $productCount): void
+    {
+        update_option(self::OPTION_KEY_LAST_PRODUCT_COUNT, $productCount);
     }
 
     /**

@@ -233,9 +233,7 @@ class PostMapper
         );
 
         foreach ($taxonomyTerms as $taxonomy => $termIds) {
-            if (!empty($termIds)) {
-                wp_set_object_terms($postId, $termIds, $taxonomy);
-            }
+            wp_set_object_terms($postId, $termIds, $taxonomy);
         }
 
         return [
