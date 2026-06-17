@@ -4,19 +4,20 @@ namespace ModularitySimpleviewEvents\Sync;
 
 /**
  * Class PostArchiver
- * 
- * Handles archiving, restoring, and pruning of posts that are no longer
- * present in the Simpleview API.
- * 
+ *
+ * Handles archiving, restoring, and pruning of posts removed from the Simpleview API
+ * or past their end date.
+ *
  * @package ModularitySimpleviewEvents\Sync
  */
 class PostArchiver
 {
     private const ARCHIVED_AT_META_KEY = '_simpleview_archived_at';
+    private const TIMEZONE = 'Europe/Stockholm';
 
     /**
      * Archive a post (set status to 'archived' and store timestamp)
-     * 
+     *
      * @param int $postId The post ID to archive
      * @return bool True on success, false on failure
      */
@@ -47,7 +48,7 @@ class PostArchiver
 
     /**
      * Restore an archived post to publish status
-     * 
+     *
      * @param int $postId The post ID to restore
      * @return bool True on success, false on failure
      */
@@ -73,8 +74,79 @@ class PostArchiver
     }
 
     /**
+     * Whether an end date string is in the past (Europe/Stockholm).
+     *
+     * Returns false when end date is missing or malformed — those posts are never date-archived.
+     *
+     * @param string|null $endDate End datetime as Y-m-d H:i:s
+     * @return bool
+     */
+    public function isEndDatePast(?string $endDate): bool
+    {
+        if ($endDate === null || trim($endDate) === '') {
+            return false;
+        }
+
+        $tz = new \DateTimeZone(self::TIMEZONE);
+        $end = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', trim($endDate), $tz);
+
+        if ($end === false) {
+            error_log(sprintf(
+                'Simpleview Events: Could not parse end date for expiry check: %s',
+                $endDate
+            ));
+            return false;
+        }
+
+        $now = new \DateTimeImmutable('now', $tz);
+
+        return $end < $now;
+    }
+
+    /**
+     * Archive published posts whose end date meta is in the past.
+     *
+     * @param string $postTypeSlug The post type slug
+     * @return array<int> Archived post IDs
+     */
+    public function archivePastEndDatePosts(string $postTypeSlug): array
+    {
+        $tz = new \DateTimeZone(self::TIMEZONE);
+        $now = (new \DateTimeImmutable('now', $tz))->format('Y-m-d H:i:s');
+
+        $posts = get_posts([
+            'post_type' => $postTypeSlug,
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'meta_query' => [
+                [
+                    'key' => SimpleviewEventMetaBuilder::END_DATE_META_KEY,
+                    'compare' => 'EXISTS',
+                ],
+                [
+                    'key' => SimpleviewEventMetaBuilder::END_DATE_META_KEY,
+                    'value' => $now,
+                    'compare' => '<',
+                    'type' => 'DATETIME',
+                ],
+            ],
+        ]);
+
+        $archived = [];
+
+        foreach ($posts ?: [] as $postId) {
+            if ($this->archivePost((int) $postId)) {
+                $archived[] = (int) $postId;
+            }
+        }
+
+        return $archived;
+    }
+
+    /**
      * Get all archived posts for a post type
-     * 
+     *
      * @param string $postTypeSlug The post type slug
      * @return array Array of post IDs
      */
@@ -92,7 +164,7 @@ class PostArchiver
 
     /**
      * Prune expired archived posts (permanently delete)
-     * 
+     *
      * @param string $postTypeSlug The post type slug
      * @param int $retentionDays Number of days to retain archived posts
      * @return array Array of deleted post IDs
@@ -129,7 +201,7 @@ class PostArchiver
 
     /**
      * Check if a post is archived
-     * 
+     *
      * @param int $postId The post ID to check
      * @return bool True if archived, false otherwise
      */
@@ -141,7 +213,7 @@ class PostArchiver
 
     /**
      * Get archive timestamp for a post
-     * 
+     *
      * @param int $postId The post ID
      * @return string|null Archive timestamp or null if not archived
      */

@@ -161,7 +161,7 @@ class PostMapper
      * @param string $postTypeSlug The post type slug
      * @param string $taxonomySlug The taxonomy slug
      * @param array $categories Array of category term IDs mapped by Simpleview category ID
-     * @return array{post_id: int, action: 'created'|'updated'|'skipped'}|\WP_Error Result on success, WP_Error on failure
+     * @return array{post_id: int, action: 'created'|'updated'|'skipped', restored: bool}|\WP_Error Result on success, WP_Error on failure
      */
     public function createOrUpdatePost(array $eventData, string $postTypeSlug, string $taxonomySlug, array $categories, ?string $mediaChannelName = null, ?string $mediaChannelId = null): array|\WP_Error
     {
@@ -177,8 +177,14 @@ class PostMapper
         $existingPostId = $this->findExistingPost((string) $simpleviewId, $postTypeSlug);
         $wasArchived = $existingPostId && $this->postArchiver->isArchived($existingPostId);
 
-        if ($existingPostId && $wasArchived) {
+        $metaPreview = $this->eventMetaBuilder->buildMeta($eventData);
+        $endDate = $metaPreview[SimpleviewEventMetaBuilder::END_DATE_META_KEY] ?? null;
+        $pastEnd = $this->postArchiver->isEndDatePast($endDate);
+
+        $didRestore = false;
+        if ($existingPostId && $wasArchived && !$pastEnd) {
             $this->postArchiver->restorePost($existingPostId);
+            $didRestore = true;
         }
 
         if ($existingPostId) {
@@ -186,9 +192,12 @@ class PostMapper
             $incomingModified = $this->toWordPressDate($eventData['@modified'] ?? null);
 
             if ($existingPost && $incomingModified && $existingPost->post_modified === $incomingModified) {
+                $this->applyPastEndDateFromApi($existingPostId, $endDate, $pastEnd);
+
                 return [
                     'post_id' => $existingPostId,
                     'action' => 'skipped',
+                    'restored' => $didRestore,
                 ];
             }
         }
@@ -238,9 +247,32 @@ class PostMapper
             }
         }
 
+        if ($pastEnd) {
+            $this->applyPastEndDateFromApi($postId, $endDate, $pastEnd);
+        }
+
         return [
             'post_id' => $postId,
             'action' => $action,
+            'restored' => $didRestore,
         ];
+    }
+
+    /**
+     * Persist end date meta from API and archive when the event is past end.
+     *
+     * @param int $postId Post ID
+     * @param string|null $endDate End datetime from API
+     * @param bool $pastEnd Whether end date is in the past
+     */
+    private function applyPastEndDateFromApi(int $postId, ?string $endDate, bool $pastEnd): void
+    {
+        if ($endDate !== null && trim($endDate) !== '') {
+            update_post_meta($postId, SimpleviewEventMetaBuilder::END_DATE_META_KEY, $endDate);
+        }
+
+        if ($pastEnd) {
+            $this->postArchiver->archivePost($postId);
+        }
     }
 }
