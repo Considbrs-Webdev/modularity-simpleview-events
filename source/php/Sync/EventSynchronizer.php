@@ -346,6 +346,9 @@ class EventSynchronizer
             }
         }
 
+        $dateArchived = $this->postArchiver->archivePastEndDatePosts($postTypeSlug);
+        $results['archived'] += count($dateArchived);
+
         $prunedPosts = $this->postArchiver->pruneExpiredArchives($postTypeSlug, $retentionDays);
         $results['pruned'] = count($prunedPosts);
 

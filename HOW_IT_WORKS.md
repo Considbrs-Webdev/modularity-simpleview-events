@@ -274,21 +274,37 @@ This allows:
 
 ### Archive & Prune Lifecycle
 
-The plugin implements a defensive sync strategy where the Simpleview API is the single source of truth. Posts that are no longer in the API are archived rather than immediately deleted, providing a safety buffer and recovery window.
+The plugin archives posts during sync using two independent rules. Both use the same `archived` post status and `_simpleview_archived_at` timestamp — there is no separate "expired" status.
+
+**Archive triggers:**
+
+| Trigger | Condition |
+|---------|-----------|
+| API removal | Product no longer in Simpleview API for this mediaChannel |
+| Date expiry | `simpleview_event_end_date` meta exists **and** value is in the past |
+
+**Date expiry rules:**
+
+- Only `simpleview_event_end_date` is used — **`start_date` is never used for archiving**
+- Events **without** an end date meta key are never date-archived (they stay published until removed from the API)
+- End date is written only when Simpleview provides `toTime` in the schedule
+- Expiry is immediate when `end_date < now` (Europe/Stockholm)
+- Events still in the API but past end date stay `archived`; content/meta are refreshed each sync without restoring to `publish`
+- Events return to `publish` only if back in the API **and** end date is not past (e.g. extended in Simpleview)
 
 **Post Lifecycle:**
 
 1. **Active Post** (`publish` status)
-   - Post exists in Simpleview API
+   - Post exists in Simpleview API and is not past its end date (if end date exists)
    - Visible on frontend and in admin
 
 2. **Archived Post** (`archived` status)
-   - Post no longer exists in Simpleview API
+   - Post removed from Simpleview API **or** past its end date
    - Moved to `archived` status during sync
    - Archive timestamp stored in `_simpleview_archived_at` meta
    - Not visible on frontend (public = false)
    - Visible in admin "All" posts list for debugging
-   - Can be restored if product returns to API
+   - Can be restored if product returns to API with a future end date
 
 3. **Pruned Post** (permanently deleted)
    - Post has been archived longer than retention period (default: 30 days)
@@ -305,21 +321,26 @@ The plugin implements a defensive sync strategy where the Simpleview API is the 
 2. **Sync Products**
    - Creates/updates posts that exist in API
    - Tracks which post IDs were synced
-   - Restores archived posts if they return to API
+   - Restores archived posts if they return to API and end date is not past
+   - Archives posts with past end date after upsert (without restoring first)
 
 3. **Archive Missing Posts**
    - Compares existing posts with synced posts
    - Archives posts not in synced list (if not already archived)
    - Stores archive timestamp
 
-4. **Prune Expired Archives**
+4. **Archive Past End Date Posts**
+   - Finds published posts with `simpleview_event_end_date` in the past
+   - Archives any not already archived (safety net / backfill)
+
+5. **Prune Expired Archives**
    - Finds archived posts older than retention period
    - Permanently deletes expired archived posts
 
 **Key Components:**
 
 - **ApiResponseValidator**: Validates API responses before sync
-- **PostArchiver**: Handles archive/restore/prune operations
+- **PostArchiver**: Handles archive/restore/prune and end-date expiry
 - **ArchivedPostStatus**: Registers custom `archived` post status
 
 **Configuration:**

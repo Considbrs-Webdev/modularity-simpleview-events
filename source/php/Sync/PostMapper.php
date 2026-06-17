@@ -177,7 +177,11 @@ class PostMapper
         $existingPostId = $this->findExistingPost((string) $simpleviewId, $postTypeSlug);
         $wasArchived = $existingPostId && $this->postArchiver->isArchived($existingPostId);
 
-        if ($existingPostId && $wasArchived) {
+        $metaPreview = $this->eventMetaBuilder->buildMeta($eventData);
+        $endDate = $metaPreview[SimpleviewEventMetaBuilder::END_DATE_META_KEY] ?? null;
+        $pastEnd = $this->postArchiver->isEndDatePast($endDate);
+
+        if ($existingPostId && $wasArchived && !$pastEnd) {
             $this->postArchiver->restorePost($existingPostId);
         }
 
@@ -236,6 +240,10 @@ class PostMapper
             if (!empty($termIds)) {
                 wp_set_object_terms($postId, $termIds, $taxonomy);
             }
+        }
+
+        if ($pastEnd) {
+            $this->postArchiver->archivePost($postId);
         }
 
         return [

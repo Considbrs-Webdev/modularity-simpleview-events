@@ -16,6 +16,8 @@ namespace ModularitySimpleviewEvents\Sync;
  */
 class SimpleviewEventMetaBuilder
 {
+    public const END_DATE_META_KEY = 'simpleview_event_end_date';
+
     private const TIMEZONE = 'Europe/Stockholm';
 
     /**
@@ -49,7 +51,7 @@ class SimpleviewEventMetaBuilder
         if ($earliestSchedule) {
             $endDate = $this->computeEndDateFromSchedule($earliestSchedule);
             if ($endDate !== null) {
-                $meta['simpleview_event_end_date'] = $endDate;
+                $meta[self::END_DATE_META_KEY] = $endDate;
             }
         }
 
