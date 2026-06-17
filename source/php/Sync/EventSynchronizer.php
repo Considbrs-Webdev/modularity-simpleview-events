@@ -306,8 +306,6 @@ class EventSynchronizer
 
         foreach ($products as $productData) {
             $simpleviewId = $productData['@id'] ?? $productData['id'] ?? '';
-            $existingPostId = $this->postMapper->findExistingPost((string) $simpleviewId, $postTypeSlug);
-            $wasArchived = $existingPostId && $this->postArchiver->isArchived($existingPostId);
 
             $result = $this->postMapper->createOrUpdatePost($productData, $postTypeSlug, $taxonomySlug, $categories, $mediaChannelName, $mediaChannelId);
 
@@ -329,10 +327,10 @@ class EventSynchronizer
 
                 if ($action === 'created') {
                     $results['created']++;
-                } elseif ($action === 'updated') {
-                    $results[$wasArchived ? 'restored' : 'updated']++;
-                } elseif ($action === 'skipped' && $wasArchived) {
+                } elseif (!empty($result['restored'])) {
                     $results['restored']++;
+                } elseif ($action === 'updated') {
+                    $results['updated']++;
                 }
             }
         }
