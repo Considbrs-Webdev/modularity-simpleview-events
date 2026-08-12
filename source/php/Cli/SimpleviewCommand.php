@@ -306,7 +306,8 @@ class SimpleviewCommand
             \WP_CLI::line('');
             \WP_CLI::line('Post Type Breakdown:');
 
-            $registeredPostTypes = get_option('simpleview_events_registered_post_types', []);
+            $postTypeManager = new \ModularitySimpleviewEvents\PostType\DynamicPostTypeManager();
+            $registeredPostTypes = $postTypeManager->getRegisteredPostTypes();
 
             $postTypeTable = [];
 
@@ -319,13 +320,20 @@ class SimpleviewCommand
                 $postTypeTable[] = [
                     'post_type' => $postTypeSlug,
                     'media_channel' => $info['name'] ?? 'Unknown',
+                    'keep_when_empty' => !empty($info['keep_when_empty']) ? 'yes' : 'no',
+                    'first_seen' => $info['first_seen_at'] ?? '—',
+                    'last_in_api' => $info['last_seen_in_api_at'] ?? '—',
                     'published' => number_format($published),
                     'archived' => number_format($archived),
                     'draft' => number_format($draft),
                 ];
             }
 
-            \WP_CLI\Utils\format_items('table', $postTypeTable, ['post_type', 'media_channel', 'published', 'archived', 'draft']);
+            \WP_CLI\Utils\format_items(
+                'table',
+                $postTypeTable,
+                ['post_type', 'media_channel', 'keep_when_empty', 'first_seen', 'last_in_api', 'published', 'archived', 'draft']
+            );
         }
     }
 }

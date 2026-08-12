@@ -265,12 +265,31 @@ This is straightforward because the category data is already in the product obje
 
 Registered post types are tracked in WordPress options:
 - **Option Key**: `simpleview_events_registered_post_types`
-- **Structure**: `[post_type_slug => [name, id, registered_at]]`
+- **Structure**: `[post_type_slug => [name, id, first_seen_at, last_seen_in_api_at, keep_when_empty]]`
 
-This allows:
+This durable registry allows:
 - Post types to be re-registered on plugin reactivation
-- Cleanup of unused post types
-- Tracking of which mediaChannels are active
+- Archives to remain available in admin and on the public site even when a media channel has no products in the current sync
+- Admins to control which archives stay registered when empty
+- Tracking of when each archive was first seen and last returned by the API
+
+**Defaults:**
+- New archives default to `keep_when_empty: true`
+- Existing registry rows are migrated to the same default on read
+
+**Cleanup rule (sync):**
+- Archives still present in the API response are always kept
+- Archives missing from the API response are removed only when `keep_when_empty` is `false`
+- Manual removal from **Settings → Simpleview Events → Event archives** removes the registry entry immediately (posts and terms are not deleted)
+- Rewrite rules are flushed when an archive enters or leaves the registry
+
+**Admin UI:**
+- **Settings → Simpleview Events → Event archives** lists all discovered archives
+- Toggle **Keep when empty** per archive
+- **Remove** drops the archive from the registry without deleting posts
+
+**Dev reset:**
+- `wp simpleview-events wipe` clears the registry along with posts and terms
 
 ### Archive & Prune Lifecycle
 
@@ -396,10 +415,12 @@ Each category taxonomy includes:
 
 ### Cleanup
 
-Unused post types are cleaned up:
-- On each sync, compares active mediaChannels with registered post types
-- Removes tracking for post types that no longer have products
-- Post types remain registered (posts aren't deleted)
+Unused post types are cleaned up during sync:
+- Compares media channels in the current API response with the durable registry
+- Keeps archives with `keep_when_empty: true`, even when they have zero posts or are missing from the current API response
+- Removes registry entries only when the channel is missing from the API **and** `keep_when_empty` is `false`
+- Posts and taxonomy terms are not deleted automatically when an archive is removed from the registry
+- Admins can remove an archive manually from **Settings → Simpleview Events → Event archives**
 
 ## Usage
 

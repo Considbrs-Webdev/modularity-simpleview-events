@@ -2,6 +2,7 @@
 
 namespace ModularitySimpleviewEvents;
 
+use ModularitySimpleviewEvents\Admin\ArchiveRegistryTable;
 use ModularitySimpleviewEvents\Admin\Settings;
 use ModularitySimpleviewEvents\Cron\SyncScheduler;
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
@@ -27,6 +28,7 @@ class App
     public function __construct()
     {
         new Settings();
+        new ArchiveRegistryTable();
 
         new SyncScheduler();
 
@@ -152,12 +154,11 @@ class App
     {
         $postTypeManager = new DynamicPostTypeManager();
         $optionKey = 'simpleview_events_registered_post_types';
-        $optionValue = get_option($optionKey, 'NOT_FOUND');
-        $registered = is_array($optionValue) ? $optionValue : [];
+        $registered = $postTypeManager->getRegisteredPostTypes();
 
         if (empty($registered)) {
             wp_cache_delete($optionKey, 'options');
-            $registered = get_option($optionKey, []);
+            $registered = $postTypeManager->getRegisteredPostTypes();
 
             if (empty($registered)) {
                 $registered = $this->discoverPostTypesFromDatabase();
@@ -170,7 +171,8 @@ class App
         foreach ($registered as $postTypeSlug => $info) {
             $postTypeManager->registerPostTypeForMediaChannel(
                 $info['name'] ?? '',
-                $info['id'] ?? ''
+                (string) ($info['id'] ?? ''),
+                false
             );
         }
     }
@@ -183,7 +185,8 @@ class App
     public function registerDynamicTaxonomies(): void
     {
         $taxonomyManager = new DynamicTaxonomyManager();
-        $registered = get_option('simpleview_events_registered_post_types', []);
+        $postTypeManager = new DynamicPostTypeManager();
+        $registered = $postTypeManager->getRegisteredPostTypes();
 
         foreach ($registered as $postTypeSlug => $info) {
             $taxonomyManager->registerCategoryTaxonomyForPostType(
@@ -254,11 +257,10 @@ class App
                     $mediaChannelName = ucwords($mediaChannelName);
                 }
 
-                $discovered[$postTypeSlug] = [
-                    'name' => $mediaChannelName,
-                    'id' => $mediaChannelId ?: 'discovered',
-                    'registered_at' => current_time('mysql'),
-                ];
+                $discovered[$postTypeSlug] = DynamicPostTypeManager::createRegistryEntry(
+                    $mediaChannelName,
+                    $mediaChannelId ?: 'discovered'
+                );
             }
         }
 
@@ -276,14 +278,12 @@ class App
             return $this->registeredSimpleviewPostTypes;
         }
 
-        $optionKey = 'simpleview_events_registered_post_types';
-        $optionValue = get_option($optionKey, []);
-        $registered = is_array($optionValue) ? $optionValue : [];
+        $postTypeManager = new DynamicPostTypeManager();
+        $registered = $postTypeManager->getRegisteredPostTypes();
 
         if (empty($registered)) {
-            wp_cache_delete($optionKey, 'options');
-            $optionValue = get_option($optionKey, []);
-            $registered = is_array($optionValue) ? $optionValue : [];
+            wp_cache_delete('simpleview_events_registered_post_types', 'options');
+            $registered = $postTypeManager->getRegisteredPostTypes();
 
             if (empty($registered)) {
                 $registered = $this->discoverPostTypesFromDatabase();
