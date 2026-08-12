@@ -33,6 +33,7 @@ class App
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
+        add_action('init', [$this, 'maybeFlushRewriteRules'], 99);
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
 
@@ -190,6 +191,22 @@ class App
                 $info['name'] ?? ''
             );
         }
+    }
+
+    /**
+     * Flush rewrite rules after sync registers a new dynamic post type.
+     *
+     * Runs on init after post types and taxonomies are registered.
+     *
+     * @return void
+     */
+    public function maybeFlushRewriteRules(): void
+    {
+        if (!get_option(DynamicPostTypeManager::FLUSH_REWRITE_RULES_OPTION)) {
+            return;
+        }
+
+        DynamicPostTypeManager::flushRewriteRulesIfNeeded();
     }
 
     /**

@@ -15,6 +15,8 @@ class DynamicPostTypeManager
 {
     private const OPTION_KEY = 'simpleview_events_registered_post_types';
 
+    public const FLUSH_REWRITE_RULES_OPTION = 'simpleview_events_flush_rewrite_rules';
+
     /**
      * Register a post type for a mediaChannel
      * 
@@ -199,12 +201,33 @@ class DynamicPostTypeManager
     private function trackPostType(string $postTypeSlug, string $mediaChannelName, string $mediaChannelId): void
     {
         $registered = get_option(self::OPTION_KEY, []);
+        $isNew = !isset($registered[$postTypeSlug]);
+
         $registered[$postTypeSlug] = [
             'name' => $mediaChannelName,
             'id' => $mediaChannelId,
             'registered_at' => current_time('mysql'),
         ];
         update_option(self::OPTION_KEY, $registered);
+
+        if ($isNew) {
+            update_option(self::FLUSH_REWRITE_RULES_OPTION, 1);
+        }
+    }
+
+    /**
+     * Regenerate rewrite rules when a new dynamic post type was registered during sync.
+     *
+     * @return void
+     */
+    public static function flushRewriteRulesIfNeeded(): void
+    {
+        if (!get_option(self::FLUSH_REWRITE_RULES_OPTION)) {
+            return;
+        }
+
+        flush_rewrite_rules();
+        delete_option(self::FLUSH_REWRITE_RULES_OPTION);
     }
 
     /**
