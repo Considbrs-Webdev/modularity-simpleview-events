@@ -29,6 +29,15 @@ class ArchiveRegistryTable
             return;
         }
 
+        $stylePath = MODULARITYSIMPLEVIEWEVENTS_PATH . 'assets/css/admin-settings.css';
+
+        wp_enqueue_style(
+            'modularity-simpleview-events-admin-settings',
+            MODULARITYSIMPLEVIEWEVENTS_URL . '/assets/css/admin-settings.css',
+            [],
+            file_exists($stylePath) ? (string) filemtime($stylePath) : '1.0.0'
+        );
+
         add_action('admin_footer', [$this, 'renderTableSection']);
     }
 
@@ -46,25 +55,25 @@ class ArchiveRegistryTable
 
         $toggleNonce = wp_create_nonce('simpleview_events_toggle_keep_archive');
         ?>
-        <div id="simpleview-events-archive-registry" class="simpleview-events-archive-registry" style="margin-top:24px;">
+        <div id="simpleview-events-archive-registry" class="simpleview-events-archive-registry">
             <h2><?php esc_html_e('Event archives', 'modularity-simpleview-events'); ?></h2>
             <p class="description">
                 <?php esc_html_e('Archives discovered from Simpleview stay registered by default, even when they have no events in the current sync. Turn off "Keep when empty" and run sync to remove unused archives automatically, or remove an archive manually below.', 'modularity-simpleview-events'); ?>
             </p>
 
             <?php if (empty($registered)) : ?>
-                <p><?php esc_html_e('No event archives have been registered yet. Run a sync to discover media channels.', 'modularity-simpleview-events'); ?></p>
+                <p class="description"><?php esc_html_e('No event archives have been registered yet. Run a sync to discover media channels.', 'modularity-simpleview-events'); ?></p>
             <?php else : ?>
                 <table class="widefat striped simpleview-events-archive-table">
                     <thead>
                         <tr>
-                            <th scope="col"><?php esc_html_e('Archive', 'modularity-simpleview-events'); ?></th>
-                            <th scope="col"><?php esc_html_e('Channel ID', 'modularity-simpleview-events'); ?></th>
-                            <th scope="col"><?php esc_html_e('First seen', 'modularity-simpleview-events'); ?></th>
-                            <th scope="col"><?php esc_html_e('Last in API', 'modularity-simpleview-events'); ?></th>
-                            <th scope="col"><?php esc_html_e('Posts', 'modularity-simpleview-events'); ?></th>
-                            <th scope="col"><?php esc_html_e('Keep when empty', 'modularity-simpleview-events'); ?></th>
-                            <th scope="col"><?php esc_html_e('Actions', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-archive"><?php esc_html_e('Archive', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-id"><?php esc_html_e('Channel ID', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-date"><?php esc_html_e('First seen', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-date"><?php esc_html_e('Last in API', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-posts"><?php esc_html_e('Posts', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-keep"><?php esc_html_e('Keep when empty', 'modularity-simpleview-events'); ?></th>
+                            <th scope="col" class="col-actions"><?php esc_html_e('Actions', 'modularity-simpleview-events'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,27 +87,26 @@ class ArchiveRegistryTable
                             );
                             ?>
                             <tr data-post-type="<?php echo esc_attr($postTypeSlug); ?>">
-                                <td>
-                                    <strong><?php echo esc_html($info['name'] ?? $postTypeSlug); ?></strong>
-                                    <br>
-                                    <code><?php echo esc_html($postTypeSlug); ?></code>
+                                <td class="col-archive">
+                                    <span class="simpleview-events-archive-registry__name"><?php echo esc_html($info['name'] ?? $postTypeSlug); ?></span>
+                                    <code class="simpleview-events-archive-registry__slug"><?php echo esc_html($postTypeSlug); ?></code>
                                 </td>
-                                <td><?php echo esc_html((string) ($info['id'] ?? '')); ?></td>
-                                <td><?php echo esc_html((string) ($info['first_seen_at'] ?? '—')); ?></td>
-                                <td><?php echo esc_html((string) ($info['last_seen_in_api_at'] ?? '—')); ?></td>
-                                <td><?php echo esc_html(number_format_i18n($postCount)); ?></td>
-                                <td>
-                                    <label>
+                                <td class="col-id"><?php echo esc_html((string) ($info['id'] ?? '')); ?></td>
+                                <td class="col-date"><?php echo $this->formatDateCell($info['first_seen_at'] ?? null); ?></td>
+                                <td class="col-date"><?php echo $this->formatDateCell($info['last_seen_in_api_at'] ?? null); ?></td>
+                                <td class="col-posts"><?php echo esc_html(number_format_i18n($postCount)); ?></td>
+                                <td class="col-keep">
+                                    <label class="simpleview-events-archive-registry__keep-label">
                                         <input
                                             type="checkbox"
                                             class="simpleview-events-keep-toggle"
                                             data-post-type="<?php echo esc_attr($postTypeSlug); ?>"
                                             <?php checked($keepWhenEmpty); ?>
                                         >
-                                        <?php esc_html_e('Keep archive', 'modularity-simpleview-events'); ?>
+                                        <span><?php esc_html_e('Keep archive', 'modularity-simpleview-events'); ?></span>
                                     </label>
                                 </td>
-                                <td>
+                                <td class="col-actions">
                                     <a
                                         class="button button-link-delete simpleview-events-remove-archive"
                                         href="<?php echo esc_url($removeUrl); ?>"
@@ -294,6 +302,29 @@ class ArchiveRegistryTable
             </div>
             <?php
         }
+    }
+
+    /**
+     * @param mixed $value
+     * @return string
+     */
+    private function formatDateCell(mixed $value): string
+    {
+        if (!is_string($value) || $value === '') {
+            return '<span class="simpleview-events-archive-registry__empty">&mdash;</span>';
+        }
+
+        $timestamp = strtotime($value);
+
+        if ($timestamp === false) {
+            return esc_html($value);
+        }
+
+        return sprintf(
+            '<span class="simpleview-events-archive-registry__date">%1$s</span><span class="simpleview-events-archive-registry__time">%2$s</span>',
+            esc_html(wp_date(get_option('date_format'), $timestamp)),
+            esc_html(wp_date(get_option('time_format'), $timestamp))
+        );
     }
 
     /**

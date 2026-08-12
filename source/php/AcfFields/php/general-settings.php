@@ -131,7 +131,10 @@ if (function_exists('acf_add_local_field_group')) {
                 'class' => '',
                 'id' => '',
             ),
-            'message' => '<button type="button" id="simpleview-events-test-connection" class="button button-secondary">Test Connection</button><div id="simpleview-events-test-result"></div>',
+            'message' => sprintf(
+                '<button type="button" id="simpleview-events-test-connection" class="button button-secondary">%s</button><div id="simpleview-events-test-result"></div>',
+                esc_html__('Test Connection', 'modularity-simpleview-events')
+            ),
             'new_lines' => '',
             'esc_html' => 0,
         ),
