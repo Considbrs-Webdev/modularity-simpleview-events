@@ -13,10 +13,23 @@ class ArchiveRegistryTable
 
     public function __construct()
     {
-        add_action('acf/input/admin_footer', [$this, 'renderTableSection']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminAssets']);
         add_action('admin_post_simpleview_events_remove_archive', [$this, 'handleRemoveArchive']);
         add_action('wp_ajax_simpleview_events_toggle_keep_archive', [$this, 'ajaxToggleKeepArchive']);
         add_action('admin_notices', [$this, 'renderAdminNotices']);
+    }
+
+    /**
+     * @param string $hook
+     * @return void
+     */
+    public function enqueueAdminAssets(string $hook): void
+    {
+        if (!$this->isSettingsHook($hook)) {
+            return;
+        }
+
+        add_action('admin_footer', [$this, 'renderTableSection']);
     }
 
     /**
@@ -24,10 +37,6 @@ class ArchiveRegistryTable
      */
     public function renderTableSection(): void
     {
-        if (!$this->isSettingsPage()) {
-            return;
-        }
-
         $postTypeManager = new DynamicPostTypeManager();
         $registered = $postTypeManager->getRegisteredPostTypes();
 
@@ -288,16 +297,29 @@ class ArchiveRegistryTable
     }
 
     /**
+     * @param string $hook
+     * @return bool
+     */
+    private function isSettingsHook(string $hook): bool
+    {
+        return str_starts_with($hook, 'settings_page_' . self::PAGE_SLUG);
+    }
+
+    /**
      * @return bool
      */
     private function isSettingsPage(): bool
     {
+        if (isset($_GET['page']) && is_string($_GET['page'])) {
+            return str_starts_with($_GET['page'], self::PAGE_SLUG);
+        }
+
         if (!function_exists('get_current_screen')) {
             return false;
         }
 
         $screen = get_current_screen();
 
-        return $screen && $screen->id === 'settings_page_' . self::PAGE_SLUG;
+        return $screen && str_starts_with($screen->id, 'settings_page_' . self::PAGE_SLUG);
     }
 }
