@@ -2,6 +2,7 @@
 
 namespace ModularitySimpleviewEvents;
 
+use ModularitySimpleviewEvents\Admin\ArchiveRegistryTable;
 use ModularitySimpleviewEvents\Admin\Settings;
 use ModularitySimpleviewEvents\Cron\SyncScheduler;
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
@@ -27,12 +28,14 @@ class App
     public function __construct()
     {
         new Settings();
+        new ArchiveRegistryTable();
 
         new SyncScheduler();
 
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
+        add_action('init', [$this, 'maybeFlushRewriteRules'], 99);
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
 
@@ -151,12 +154,11 @@ class App
     {
         $postTypeManager = new DynamicPostTypeManager();
         $optionKey = 'simpleview_events_registered_post_types';
-        $optionValue = get_option($optionKey, 'NOT_FOUND');
-        $registered = is_array($optionValue) ? $optionValue : [];
+        $registered = $postTypeManager->getRegisteredPostTypes();
 
         if (empty($registered)) {
             wp_cache_delete($optionKey, 'options');
-            $registered = get_option($optionKey, []);
+            $registered = $postTypeManager->getRegisteredPostTypes();
 
             if (empty($registered)) {
                 $registered = $this->discoverPostTypesFromDatabase();
@@ -169,7 +171,8 @@ class App
         foreach ($registered as $postTypeSlug => $info) {
             $postTypeManager->registerPostTypeForMediaChannel(
                 $info['name'] ?? '',
-                $info['id'] ?? ''
+                (string) ($info['id'] ?? ''),
+                false
             );
         }
     }
@@ -182,7 +185,8 @@ class App
     public function registerDynamicTaxonomies(): void
     {
         $taxonomyManager = new DynamicTaxonomyManager();
-        $registered = get_option('simpleview_events_registered_post_types', []);
+        $postTypeManager = new DynamicPostTypeManager();
+        $registered = $postTypeManager->getRegisteredPostTypes();
 
         foreach ($registered as $postTypeSlug => $info) {
             $taxonomyManager->registerCategoryTaxonomyForPostType(
@@ -190,6 +194,18 @@ class App
                 $info['name'] ?? ''
             );
         }
+    }
+
+    /**
+     * Flush rewrite rules after an archive was removed from the registry.
+     *
+     * Runs on init after post types and taxonomies are registered.
+     *
+     * @return void
+     */
+    public function maybeFlushRewriteRules(): void
+    {
+        DynamicPostTypeManager::flushDeferredRewriteRulesIfNeeded();
     }
 
     /**
@@ -237,11 +253,10 @@ class App
                     $mediaChannelName = ucwords($mediaChannelName);
                 }
 
-                $discovered[$postTypeSlug] = [
-                    'name' => $mediaChannelName,
-                    'id' => $mediaChannelId ?: 'discovered',
-                    'registered_at' => current_time('mysql'),
-                ];
+                $discovered[$postTypeSlug] = DynamicPostTypeManager::createRegistryEntry(
+                    $mediaChannelName,
+                    $mediaChannelId ?: 'discovered'
+                );
             }
         }
 
@@ -259,14 +274,12 @@ class App
             return $this->registeredSimpleviewPostTypes;
         }
 
-        $optionKey = 'simpleview_events_registered_post_types';
-        $optionValue = get_option($optionKey, []);
-        $registered = is_array($optionValue) ? $optionValue : [];
+        $postTypeManager = new DynamicPostTypeManager();
+        $registered = $postTypeManager->getRegisteredPostTypes();
 
         if (empty($registered)) {
-            wp_cache_delete($optionKey, 'options');
-            $optionValue = get_option($optionKey, []);
-            $registered = is_array($optionValue) ? $optionValue : [];
+            wp_cache_delete('simpleview_events_registered_post_types', 'options');
+            $registered = $postTypeManager->getRegisteredPostTypes();
 
             if (empty($registered)) {
                 $registered = $this->discoverPostTypesFromDatabase();

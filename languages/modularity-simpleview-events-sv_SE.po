@@ -462,3 +462,94 @@ msgstr "API-anrop misslyckades med status %1$d: %2$s"
 #, php-format
 msgid "Product count dropped significantly: %1$d products (was %2$d). This may indicate an API issue, but sync will proceed."
 msgstr "Produktantal sjönk kraftigt: %1$d produkter (var %2$d). Det kan tyda på ett API-problem, men synkroniseringen fortsätter."
+
+#: source/php/Admin/ArchiveRegistryTable.php:50
+msgid "Event archives"
+msgstr "Evenemangsarkiv"
+
+#: source/php/Admin/ArchiveRegistryTable.php:52
+msgid "Archives discovered from Simpleview stay registered by default, even when they have no events in the current sync. Turn off \"Keep when empty\" and run sync to remove unused archives automatically, or remove an archive manually below."
+msgstr "Arkiv som hittats via Simpleview förblir registrerade som standard, även när de saknar evenemang i aktuell synk. Stäng av «Behåll när tom» och kör synk för att ta bort oanvända arkiv automatiskt, eller ta bort ett arkiv manuellt nedan."
+
+#: source/php/Admin/ArchiveRegistryTable.php:56
+msgid "No event archives have been registered yet. Run a sync to discover media channels."
+msgstr "Inga evenemangsarkiv har registrerats ännu. Kör en synk för att hitta media kanaler."
+
+#: source/php/Admin/ArchiveRegistryTable.php:61
+msgid "Archive"
+msgstr "Arkiv"
+
+#: source/php/Admin/ArchiveRegistryTable.php:62
+msgid "Channel ID"
+msgstr "Kanal-ID"
+
+#: source/php/Admin/ArchiveRegistryTable.php:63
+msgid "First seen"
+msgstr "Först sedd"
+
+#: source/php/Admin/ArchiveRegistryTable.php:64
+msgid "Last in API"
+msgstr "Senast i API"
+
+#: source/php/Admin/ArchiveRegistryTable.php:65
+msgid "Posts"
+msgstr "Inlägg"
+
+#: source/php/Admin/ArchiveRegistryTable.php:66
+msgid "Keep when empty"
+msgstr "Behåll när tom"
+
+#: source/php/Admin/ArchiveRegistryTable.php:67
+msgid "Actions"
+msgstr "Åtgärder"
+
+#: source/php/Admin/ArchiveRegistryTable.php:98
+msgid "Keep archive"
+msgstr "Behåll arkiv"
+
+#: source/php/Admin/ArchiveRegistryTable.php:109
+msgid "Remove"
+msgstr "Ta bort"
+
+#: source/php/Admin/ArchiveRegistryTable.php:161
+#: source/php/Admin/ArchiveRegistryTable.php:166
+msgid "Could not update archive setting."
+msgstr "Kunde inte uppdatera arkivinställningen."
+
+#: source/php/Admin/ArchiveRegistryTable.php:183
+msgid "Remove \"%s\" from the archive registry? The admin menu and public archive will disappear on the next page load. Posts and categories are not deleted."
+msgstr "Ta bort «%s» från arkivregistret? Adminmenyn och det publika arkivet försvinner vid nästa sidladdning. Inlägg och kategorier raderas inte."
+
+#: source/php/Admin/ArchiveRegistryTable.php:187
+msgid "Warning: this archive still has posts in the database."
+msgstr "Varning: detta arkiv har fortfarande inlägg i databasen."
+
+#: source/php/Admin/ArchiveRegistryTable.php:214
+msgid "Invalid archive."
+msgstr "Ogiltigt arkiv."
+
+#: source/php/Admin/ArchiveRegistryTable.php:220
+msgid "Archive not found."
+msgstr "Arkivet hittades inte."
+
+#: source/php/Admin/ArchiveRegistryTable.php:225
+msgid "Archive will be kept even when empty."
+msgstr "Arkivet behålls även när det är tomt."
+
+#: source/php/Admin/ArchiveRegistryTable.php:226
+msgid "Archive will be removed on the next sync if it is not in the API response."
+msgstr "Arkivet tas bort vid nästa synk om det inte finns i API-svaret."
+
+#. translators: %s: post type slug
+#: source/php/Admin/ArchiveRegistryTable.php:277
+#, php-format
+msgid "Removed archive \"%s\" from the registry."
+msgstr "Tog bort arkivet «%s» från registret."
+
+#: source/php/Admin/ArchiveRegistryTable.php:289
+msgid "Archive could not be removed because it was not found."
+msgstr "Arkivet kunde inte tas bort eftersom det inte hittades."
+
+#: source/php/Admin/ArchiveRegistryTable.php:290
+msgid "Archive could not be removed."
+msgstr "Arkivet kunde inte tas bort."

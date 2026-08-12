@@ -168,6 +168,8 @@ class EventSynchronizer
                 }
             }
 
+            DynamicPostTypeManager::flushRewriteRulesAfterSync();
+
             return $results;
         } finally {
             delete_transient($lockKey);
