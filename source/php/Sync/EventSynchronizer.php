@@ -168,7 +168,7 @@ class EventSynchronizer
                 }
             }
 
-            DynamicPostTypeManager::flushRewriteRulesIfNeeded();
+            DynamicPostTypeManager::flushRewriteRulesAfterSync();
 
             return $results;
         } finally {

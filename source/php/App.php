@@ -197,7 +197,7 @@ class App
     }
 
     /**
-     * Flush rewrite rules after sync registers a new dynamic post type.
+     * Flush rewrite rules after an archive was removed from the registry.
      *
      * Runs on init after post types and taxonomies are registered.
      *
@@ -205,11 +205,7 @@ class App
      */
     public function maybeFlushRewriteRules(): void
     {
-        if (!get_option(DynamicPostTypeManager::FLUSH_REWRITE_RULES_OPTION)) {
-            return;
-        }
-
-        DynamicPostTypeManager::flushRewriteRulesIfNeeded();
+        DynamicPostTypeManager::flushDeferredRewriteRulesIfNeeded();
     }
 
     /**

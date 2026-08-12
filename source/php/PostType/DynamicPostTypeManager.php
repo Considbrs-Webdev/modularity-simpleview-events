@@ -15,6 +15,11 @@ class DynamicPostTypeManager
 {
     private const OPTION_KEY = 'simpleview_events_registered_post_types';
 
+    public const FLUSH_REWRITE_ADD_OPTION = 'simpleview_events_flush_rewrite_add';
+
+    public const FLUSH_REWRITE_REMOVE_OPTION = 'simpleview_events_flush_rewrite_remove';
+
+    /** @deprecated Legacy flag; treated as deferred removal flush on init. */
     public const FLUSH_REWRITE_RULES_OPTION = 'simpleview_events_flush_rewrite_rules';
 
     /**
@@ -341,7 +346,7 @@ class DynamicPostTypeManager
 
         if ($isNew) {
             $registered[$postTypeSlug] = self::createRegistryEntry($mediaChannelName, $mediaChannelId);
-            update_option(self::FLUSH_REWRITE_RULES_OPTION, 1);
+            update_option(self::FLUSH_REWRITE_ADD_OPTION, 1);
         } else {
             $registered[$postTypeSlug]['name'] = $mediaChannelName;
             $registered[$postTypeSlug]['id'] = $mediaChannelId;
@@ -352,17 +357,39 @@ class DynamicPostTypeManager
     }
 
     /**
-     * Regenerate rewrite rules when a new dynamic post type was registered during sync.
+     * Flush rewrite rules after sync registers a new dynamic post type.
+     *
+     * Only runs for additions. Removals defer to the next init so flushed rules
+     * do not still include post types registered earlier in the same request.
      *
      * @return void
      */
-    public static function flushRewriteRulesIfNeeded(): void
+    public static function flushRewriteRulesAfterSync(): void
     {
-        if (!get_option(self::FLUSH_REWRITE_RULES_OPTION)) {
+        if (!get_option(self::FLUSH_REWRITE_ADD_OPTION)) {
             return;
         }
 
         flush_rewrite_rules();
+        delete_option(self::FLUSH_REWRITE_ADD_OPTION);
+    }
+
+    /**
+     * Flush rewrite rules on init after an archive was removed from the registry.
+     *
+     * @return void
+     */
+    public static function flushDeferredRewriteRulesIfNeeded(): void
+    {
+        if (
+            !get_option(self::FLUSH_REWRITE_REMOVE_OPTION)
+            && !get_option(self::FLUSH_REWRITE_RULES_OPTION)
+        ) {
+            return;
+        }
+
+        flush_rewrite_rules();
+        delete_option(self::FLUSH_REWRITE_REMOVE_OPTION);
         delete_option(self::FLUSH_REWRITE_RULES_OPTION);
     }
 
@@ -385,7 +412,7 @@ class DynamicPostTypeManager
 
         unset($registered[$postTypeSlug]);
         update_option(self::OPTION_KEY, $registered);
-        update_option(self::FLUSH_REWRITE_RULES_OPTION, 1);
+        update_option(self::FLUSH_REWRITE_REMOVE_OPTION, 1);
 
         return true;
     }
