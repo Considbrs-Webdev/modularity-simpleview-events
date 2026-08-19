@@ -33,6 +33,7 @@ class App
         new SyncScheduler();
 
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
+        add_filter('quick_edit_statuses', [$this, 'addQuickEditArchivedStatus'], 10, 4);
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
         add_action('init', [$this, 'maybeFlushRewriteRules'], 99);
@@ -136,13 +137,33 @@ class App
 
     /**
      * Register the archived post status
-     * 
+     *
      * @return void
      */
     public function registerArchivedPostStatus(): void
     {
         $archivedStatus = new ArchivedPostStatus();
         $archivedStatus->register();
+    }
+
+    /**
+     * Add "Archived" to Quick Edit/Bulk Edit for Simpleview event post types.
+     *
+     * @param array<string, string> $statuses
+     * @param string $postType
+     * @param bool $bulk
+     * @param bool $canPublish
+     * @return array<string, string>
+     */
+    public function addQuickEditArchivedStatus(array $statuses, string $postType, bool $bulk, bool $canPublish): array
+    {
+        if (!$canPublish || !in_array($postType, $this->getRegisteredSimpleviewPostTypes(), true)) {
+            return $statuses;
+        }
+
+        $statuses['archived'] = __('Archived', 'modularity-simpleview-events');
+
+        return $statuses;
     }
 
     /**
