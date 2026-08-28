@@ -10,6 +10,7 @@ use ModularitySimpleviewEvents\Taxonomy\DynamicTaxonomyManager;
 use ModularitySimpleviewEvents\PostStatus\ArchivedPostStatus;
 use ModularitySimpleviewEvents\ApplyDecorator\ApplySimpleviewEventData;
 use ModularitySimpleviewEvents\Helper\CacheBust;
+use ModularitySimpleviewEvents\Query\ArchiveQueryAdjuster;
 
 /**
  * Class App
@@ -45,6 +46,7 @@ class App
         add_filter('ComponentLibrary/ViewPaths', [$this, 'addComponentLibraryViewPaths'], 999);
 
         add_action('rest_request_before_callbacks', [$this, 'exposePostTypeFromRestAttributes'], 10, 3);
+        add_action('pre_get_posts', [new ArchiveQueryAdjuster(), 'preGetPosts']);
 
         add_action('wp_enqueue_scripts', [$this, 'enqueueStyles']);
 
