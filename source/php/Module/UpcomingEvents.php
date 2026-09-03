@@ -41,11 +41,20 @@ class UpcomingEvents extends \Modularity\Module
             $calendarUrl = (string) get_permalink((int) $calendarPageId);
         }
 
+        $calendarLinkLabel = is_string($fields['calendar_link_label'] ?? null)
+            ? trim($fields['calendar_link_label'])
+            : '';
+
+        if ($calendarLinkLabel === '') {
+            $calendarLinkLabel = __('Till evenemangskalendern', 'modularity-simpleview-events');
+        }
+
         $events = $postType !== '' ? (new UpcomingEventsQuery())->getUpcomingEvents($postType) : [];
 
         return [
             'events' => $events,
             'calendarUrl' => $calendarUrl,
+            'calendarLinkLabel' => $calendarLinkLabel,
             'iconColor' => '#666666',
             'emptyMessage' => __('Inga kommande evenemang.', 'modularity-simpleview-events'),
         ];

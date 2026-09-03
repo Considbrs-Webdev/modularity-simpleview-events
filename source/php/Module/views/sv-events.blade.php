@@ -13,7 +13,7 @@
 
             @if (!empty($calendarUrl))
                 <a href="{{ esc_url($calendarUrl) }}" class="mod-sv-events__link">
-                    {{ __('Till evenemangskalendern', 'modularity-simpleview-events') }}
+                    {{ $calendarLinkLabel ?? __('Till evenemangskalendern', 'modularity-simpleview-events') }}
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M12 4L11.293 4.707L13.586 7H2V8H13.586L11.293 10.293L12 11L15.5 7.5L12 4Z" fill="currentColor"/>
                     </svg>
