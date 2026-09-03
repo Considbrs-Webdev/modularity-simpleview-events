@@ -107,3 +107,274 @@
   align-items: center;
   gap: 0.75rem;
 }
+
+// Upcoming events module (Latest Events appearance, server-rendered)
+.mod-sv-events {
+  --mod-sv-events-spacing-xs: 0.2rem;
+  --mod-sv-events-spacing-sm: 0.5rem;
+  --mod-sv-events-spacing-md: 1rem;
+  --mod-sv-events-spacing-lg: 1.5rem;
+  --mod-sv-events-spacing-xl: 2rem;
+  --mod-sv-events-color-white: var(--color-white, #ffffff);
+  --mod-sv-events-color-black: var(--color-black, #000000);
+  --mod-sv-events-color-text: var(--color-base, #000000);
+  --mod-sv-events-color-text-secondary: var(
+    --text-secondary,
+    rgba(0, 0, 0, 0.7)
+  );
+  --mod-sv-events-color-background-light: var(--color-lighter, #e5e5e5);
+  --mod-sv-events-radius-sm: var(--radius-sm, 4px);
+  --mod-sv-events-font-family-heading: var(
+    --font-family-heading,
+    Work Sans,
+    sans-serif
+  );
+  --mod-sv-events-font-family-base: var(
+    --font-family-base,
+    Work Sans,
+    sans-serif
+  );
+  --mod-sv-events-font-weight-base: var(--font-weight-base, 400);
+  --mod-sv-events-font-weight-heading: var(
+    --h3-font-weight,
+    var(--font-weight-heading, 600)
+  );
+  --mod-sv-events-font-weight-bold: var(--font-weight-bold, 700);
+  --mod-sv-events-font-size-base: var(--c-slider-item-font-size-base, 1rem);
+  --mod-sv-events-font-size-heading: var(--h3-font-size, 22px);
+  --mod-sv-events-line-height-base: 27px;
+
+  container-type: inline-size;
+  container-name: mod-sv-events;
+
+  ul {
+    li {
+      padding-left: 0;
+      margin-top: 0;
+    }
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--mod-sv-events-spacing-xl, 2rem);
+    flex-wrap: wrap;
+    gap: var(--mod-sv-events-spacing-md, 1rem);
+    color: var(--mod-sv-events-color-text, #000);
+  }
+
+  &__title {
+    margin: 0;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mod-sv-events-spacing-sm, 0.5rem);
+    color: var(--mod-sv-events-color-text, #000);
+    text-decoration: none;
+    font-weight: var(--mod-sv-events-font-weight-heading, 600);
+    transition: opacity 0.2s ease;
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      opacity: 0.7;
+      text-decoration: underline;
+      outline: thick solid #4d90fe;
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    &:hover {
+      opacity: 0.7;
+      text-decoration: underline;
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  &__empty {
+    margin: 0;
+    color: var(--mod-sv-events-color-text-secondary, rgba(0, 0, 0, 0.7));
+  }
+
+  &__container {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--mod-sv-events-spacing-lg, 1.5rem);
+    grid-template-columns: minmax(0, 1fr);
+
+    @container mod-sv-events (min-width: 36rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @container mod-sv-events (min-width: 72rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  // .c-article img { margin-top } from pitea-customisation would leave a gap above the photo
+  .c-event-card img {
+    margin-top: 0;
+  }
+}
+
+.c-event-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--mod-sv-events-color-white, #fff);
+  border-radius: var(--mod-sv-events-radius-sm, 8px);
+  overflow: hidden;
+
+  &__link {
+    position: static;
+    display: inline;
+    color: inherit;
+    text-decoration: none;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &:has(.c-event-card__link:focus-visible) {
+    outline: thick solid #4d90fe;
+    outline-offset: 4px;
+    border-radius: var(--mod-sv-events-radius-sm, 4px);
+  }
+
+  &__image-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    overflow: hidden;
+    background: var(--mod-sv-events-color-background-light, #f0f0f0);
+  }
+
+  &__image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    margin: 0;
+  }
+
+  &__badge {
+    position: absolute;
+    top: 0;
+    left: var(--mod-sv-events-spacing-md, 1rem);
+    width: 3.25rem;
+    height: 3.5625rem;
+    padding: 0.8125rem 0.5625rem 0.75rem 0.5625rem;
+    border-radius: 0 0 0.125rem 0.125rem;
+    background: var(--mod-sv-events-color-black, #000);
+    color: var(--mod-sv-events-color-white, #fff);
+    font-size: var(--mod-sv-events-spacing-md, 1rem);
+    font-weight: var(--mod-sv-events-font-weight-bold, 700);
+    line-height: var(--mod-sv-events-spacing-md, 1rem);
+    text-transform: lowercase;
+    margin-left: auto;
+    margin-right: auto;
+
+    > * {
+      width: 2.1875rem;
+      flex: 1 0 0;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--mod-sv-events-spacing-lg, 1.5rem)
+      var(--mod-sv-events-spacing-lg, 1.5rem) 1.875rem
+      var(--mod-sv-events-spacing-lg, 1.5rem);
+    gap: 1.375rem;
+    flex: 1 0 0;
+    align-self: stretch;
+    background: var(--mod-sv-events-color-white, #fff);
+  }
+
+  &__title {
+    align-self: stretch;
+    margin: 0;
+    color: var(--mod-sv-events-color-text, #000);
+    font-family: var(
+      --mod-sv-events-font-family-heading,
+      Work Sans,
+      sans-serif
+    );
+    font-size: var(--mod-sv-events-font-size-heading, 1.2rem);
+    font-style: normal;
+    font-weight: var(--mod-sv-events-font-weight-heading, 600);
+    line-height: var(--mod-sv-events-line-height-base, 1.5);
+    text-decoration-style: solid;
+    text-decoration-skip-ink: auto;
+    text-decoration-thickness: auto;
+    text-underline-offset: auto;
+    text-underline-position: from-font;
+  }
+
+  &__title &__link {
+    font: inherit;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mod-sv-events-spacing-xs, 0.2rem);
+  }
+
+  &__meta-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--mod-sv-events-spacing-sm, 0.5rem);
+    color: var(--mod-sv-events-color-text, #000);
+    font-family: var(
+      --mod-sv-events-font-family-base,
+      Work Sans,
+      sans-serif
+    );
+    font-size: var(--mod-sv-events-font-size-base, 1rem);
+    font-style: normal;
+    font-weight: var(--mod-sv-events-font-weight-base, 400);
+    line-height: var(--mod-sv-events-line-height-base, 1.5);
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: currentColor;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-top: calc(
+      (var(--mod-sv-events-line-height-base, 27px) - 1em) / 2
+    );
+  }
+}
