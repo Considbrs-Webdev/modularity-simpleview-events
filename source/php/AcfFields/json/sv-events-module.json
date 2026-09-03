@@ -27,16 +27,36 @@
                 "placeholder": ""
             },
             {
+                "key": "field_sv_events_calendar_link_label",
+                "label": "Länktext",
+                "name": "calendar_link_label",
+                "aria-label": "",
+                "type": "text",
+                "instructions": "Text för länken till kalendersidan. Standard är \"Till evenemangskalendern\".",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "50",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "Till evenemangskalendern",
+                "maxlength": "",
+                "placeholder": "Till evenemangskalendern",
+                "prepend": "",
+                "append": ""
+            },
+            {
                 "key": "field_sv_events_calendar_page",
                 "label": "Kalendersida",
                 "name": "calendar_page",
                 "aria-label": "",
                 "type": "post_object",
-                "instructions": "Sida som länken \"Till evenemangskalendern\" ska gå till. Lämna tom för att dölja länken.",
+                "instructions": "Sida som \"visa alla\"-länken ska gå till. Lämna tom för att dölja länken.",
                 "required": 0,
                 "conditional_logic": 0,
                 "wrapper": {
-                    "width": "",
+                    "width": "50",
                     "class": "",
                     "id": ""
                 },

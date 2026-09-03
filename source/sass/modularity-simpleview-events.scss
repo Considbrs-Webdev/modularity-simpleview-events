@@ -162,15 +162,20 @@
     flex-wrap: wrap;
     gap: var(--mod-sv-events-spacing-md, 1rem);
     color: var(--mod-sv-events-color-text, #000);
+    width: 100%;
   }
 
   &__title {
     margin: 0;
+    flex: 1 1 auto;
+    width: auto;
   }
 
   &__link {
     display: inline-flex;
     align-items: center;
+    margin-left: auto;
+    flex-shrink: 0;
     gap: var(--mod-sv-events-spacing-sm, 0.5rem);
     color: var(--mod-sv-events-color-text, #000);
     text-decoration: none;
