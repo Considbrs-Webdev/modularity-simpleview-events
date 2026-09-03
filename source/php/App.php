@@ -3,6 +3,7 @@
 namespace ModularitySimpleviewEvents;
 
 use ModularitySimpleviewEvents\Admin\ArchiveRegistryTable;
+use ModularitySimpleviewEvents\Admin\ModuleAcfFields;
 use ModularitySimpleviewEvents\Admin\Settings;
 use ModularitySimpleviewEvents\Cron\SyncScheduler;
 use ModularitySimpleviewEvents\PostType\DynamicPostTypeManager;
@@ -30,9 +31,11 @@ class App
     {
         new Settings();
         new ArchiveRegistryTable();
+        new ModuleAcfFields();
 
         new SyncScheduler();
 
+        add_action('init', [$this, 'registerModule'], 5);
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
         add_filter('quick_edit_statuses', [$this, 'addQuickEditArchivedStatus'], 10, 4);
         add_action('init', [$this, 'registerDynamicPostTypes'], 0);
@@ -51,6 +54,21 @@ class App
         add_action('wp_enqueue_scripts', [$this, 'enqueueStyles']);
 
         new TypesenseSearchIntegration();
+    }
+
+    /**
+     * Register the upcoming events Modularity module.
+     */
+    public function registerModule(): void
+    {
+        if (!function_exists('modularity_register_module')) {
+            return;
+        }
+
+        modularity_register_module(
+            MODULARITYSIMPLEVIEWEVENTS_MODULE_PATH,
+            'UpcomingEvents'
+        );
     }
 
     /**
