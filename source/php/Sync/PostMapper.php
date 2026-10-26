@@ -228,7 +228,8 @@ class PostMapper
         }
 
         // WordPress overwrites post_modified when wp_update_post runs. We must set it
-        // directly so the skip check works on the next sync.
+        // directly so the skip check works on the next sync. The raw write leaves the
+        // object cache holding the previous post, so drop that entry before the next read.
         global $wpdb;
         $wpdb->update(
             $wpdb->posts,
@@ -240,6 +241,7 @@ class PostMapper
             ['%s', '%s'],
             ['%d']
         );
+        clean_post_cache($postId);
 
         foreach ($taxonomyTerms as $taxonomy => $termIds) {
             if (!empty($termIds)) {
