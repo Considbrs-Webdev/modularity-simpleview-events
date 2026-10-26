@@ -16,9 +16,28 @@ class UpcomingEventsQuery
     private const LIMIT = 4;
 
     /**
+     * Upcoming events for one Simpleview channel.
+     *
+     * Restores the previous global post. This query does not enter the loop;
+     * wp_reset_postdata() would copy the main query post onto that global.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getUpcomingEvents(string $postType): array
+    {
+        $previousPost = ($GLOBALS['post'] ?? null) instanceof WP_Post ? $GLOBALS['post'] : null;
+
+        try {
+            return $this->queryUpcomingEvents($postType);
+        } finally {
+            $GLOBALS['post'] = $previousPost;
+        }
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function queryUpcomingEvents(string $postType): array
     {
         if (!$this->isAllowedPostType($postType)) {
             return [];
@@ -83,8 +102,6 @@ class UpcomingEventsQuery
                 'location' => (string) ($eventData->locationName ?? ''),
             ];
         }
-
-        wp_reset_postdata();
 
         return $events;
     }
