@@ -148,6 +148,19 @@ class EventSynchronizer
                 ];
             }
 
+            // Media channels with no products in the API are not in $groupedProducts,
+            // so their past events would never be archived or pruned above.
+            foreach (array_keys($this->postTypeManager->getRegisteredPostTypes()) as $inactiveSlug) {
+                if (in_array($inactiveSlug, $activePostTypeSlugs, true)) {
+                    continue;
+                }
+
+                $archivedIds = $this->postArchiver->archivePastEndDatePosts($inactiveSlug);
+                $prunedIds = $this->postArchiver->pruneExpiredArchives($inactiveSlug, $retentionDays);
+                $results['archived'] += count($archivedIds);
+                $results['pruned'] += count($prunedIds);
+            }
+
             $this->postTypeManager->cleanupUnusedPostTypes($activePostTypeSlugs);
             update_option('simpleview_events_last_sync', current_time('mysql'));
 
