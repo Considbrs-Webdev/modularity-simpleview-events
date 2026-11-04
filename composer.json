@@ -9,6 +9,9 @@
       "email": "webdev@considbrs.se"
     }
   ],
+  "require": {
+    "php": ">=8.3"
+  },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "suggest": {
