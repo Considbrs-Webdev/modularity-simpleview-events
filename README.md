@@ -9,11 +9,19 @@ A WordPress plugin for integrating events from the Simpleview API into WordPress
 - Manual sync trigger from admin settings
 - Configurable API credentials and sync frequency
 
+## Requirements
+
+- PHP 8.3 or later
+- WordPress with the Municipio theme and the Modularity plugin
+- Advanced Custom Fields
+- Composer and Node.js/npm for building
+
 ## Installation
 
 1. Place the plugin in `wp-content/plugins/modularity-simpleview-events/`
-2. Run `composer dump` to create a new autoloader
-3. Activate the plugin through the WordPress admin
+2. Run `composer install` (or `composer dump-autoload` to only regenerate the autoloader)
+3. Run `npm ci && npm run build` to build assets (or `php build.php` to do all build steps)
+4. Activate the plugin through the WordPress admin
 
 ## Configuration
 
@@ -85,17 +93,41 @@ This command shows:
 
 ## Development
 
-The plugin structure follows the pattern established by `modularity-municipal-calendar`:
+Source layout:
 
-- `source/php/` - PHP source files
-- `source/php/AcfFields/` - ACF fields for the general settings page
+- `source/php/` - PHP source files (PSR-4, namespace `ModularitySimpleviewEvents\`)
+- `source/php/AcfFields/` - ACF fields (auto-exported/imported)
 - `source/php/Admin/` - Admin functionality
 - `source/php/Api/` - API client for Simpleview
-- `source/php/cli/` - CLI commands for syncing events
+- `source/php/Cache/` - Cache purging for event modules
+- `source/php/Cli/` - WP-CLI commands
 - `source/php/Cron/` - WP Cron scheduling
-- `source/php/PostType/` - Post type mapping logic
-- `source/php/Sync/` - Synchronization logic
-- `source/php/Taxonomy/` - Taxonomy mapping logic
+- `source/php/Module/` - Upcoming events module
+- `source/php/PostType/`, `source/php/Taxonomy/` - Dynamic post type and taxonomy registration
+- `source/php/Query/` - Archive and upcoming events queries
+- `source/php/Sync/` - Synchronization and archiving logic
+- `source/js`, `source/sass` - Frontend assets built with Vite
+
+Build commands: `npm run build`, `npm run build:dev`, `npm run watch`.
+
+See `HOW_IT_WORKS.md` for the architecture and sync flow.
+
+## Tests
+
+There is no automated test setup yet.
+
+## Roadmap
+
+- Automated tests (PHPUnit)
+- Linting/formatting (PHP_CodeSniffer, PSR-12)
+
+## Release
+
+Development happens on `dev`. When done, `dev` is merged into `main` and a release is tagged from `main`. The version is set in the plugin header in `modularity-simpleview-events.php`.
+
+## Working with AI
+
+See `AGENTS.md` for instructions to AI tools working in this repository.
 
 ## License
 
