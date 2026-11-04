@@ -3,6 +3,7 @@
 namespace ModularitySimpleviewEvents;
 
 use ModularitySimpleviewEvents\Admin\ArchiveRegistryTable;
+use ModularitySimpleviewEvents\Cache\EventsModuleCachePurger;
 use ModularitySimpleviewEvents\Admin\ModuleAcfFields;
 use ModularitySimpleviewEvents\Admin\Settings;
 use ModularitySimpleviewEvents\Cron\SyncScheduler;
@@ -34,6 +35,7 @@ class App
         new ModuleAcfFields();
 
         new SyncScheduler();
+        new EventsModuleCachePurger();
 
         add_action('init', [$this, 'registerModule'], 5);
         add_action('init', [$this, 'registerArchivedPostStatus'], 10);
