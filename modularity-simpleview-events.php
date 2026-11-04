@@ -2,11 +2,12 @@
 
 /**
  * Plugin Name:       Modularity Simpleview Events
- * Plugin URI:        https://github.com/helsingborg-stad/modularity-simpleview-events
+ * Plugin URI:        https://github.com/Considbrs-Webdev/modularity-simpleview-events
  * Description:       A Simpleview event integration plugin for managing events from Simpleview API.
  * Version: 1.0.0
- * Author:            Starter
- * Author URI:        https://github.com/helsingborg-stad
+ * Requires PHP:       8.3
+ * Author:            Consid Borås AB
+ * Author URI:        https://github.com/Considbrs-Webdev/
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
  * Text Domain:       modularity-simpleview-events
