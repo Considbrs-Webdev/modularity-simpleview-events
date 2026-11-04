@@ -55,6 +55,7 @@ class UpcomingEvents extends \Modularity\Module
             'events' => $events,
             'calendarUrl' => $calendarUrl,
             'calendarLinkLabel' => $calendarLinkLabel,
+            'hideWhenEmpty' => !empty($fields['hide_when_empty']) && empty($events) && $this->isFrontendRequest(),
             'iconColor' => '#666666',
             'emptyMessage' => __('Inga kommande evenemang.', 'modularity-simpleview-events'),
         ];
@@ -63,5 +64,13 @@ class UpcomingEvents extends \Modularity\Module
     public function template(): string
     {
         return 'sv-events.blade.php';
+    }
+
+    /**
+     * Editor previews are rendered via admin, admin-ajax or REST requests; only hide on the public site.
+     */
+    private function isFrontendRequest(): bool
+    {
+        return !is_admin() && !wp_doing_ajax() && !(defined('REST_REQUEST') && REST_REQUEST);
     }
 }

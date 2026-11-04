@@ -74,6 +74,26 @@ if (function_exists('acf_add_local_field_group')) {
                 'allow_null' => 1,
                 'ui' => 1,
             ],
+            [
+                'key' => 'field_sv_events_hide_when_empty',
+                'label' => __('Dölj när det saknas evenemang', 'modularity-simpleview-events'),
+                'name' => 'hide_when_empty',
+                'aria-label' => '',
+                'type' => 'true_false',
+                'instructions' => __('Modulen syns inte om det inte finns några evenemang.', 'modularity-simpleview-events'),
+                'required' => 0,
+                'conditional_logic' => 0,
+                'wrapper' => [
+                    'width' => '',
+                    'class' => '',
+                    'id' => '',
+                ],
+                'message' => '',
+                'default_value' => 0,
+                'ui' => 1,
+                'ui_on_text' => '',
+                'ui_off_text' => '',
+            ],
         ],
         'location' => [
             [

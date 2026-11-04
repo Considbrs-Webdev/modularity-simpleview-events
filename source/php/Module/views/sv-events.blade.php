@@ -1,3 +1,4 @@
+@if (empty($hideWhenEmpty))
 <div class="mod-sv-events">
     @if (!$hideTitle && $postTitle || !empty($calendarUrl))
         <div class="mod-sv-events__header">
@@ -72,3 +73,4 @@
         </ul>
     @endif
 </div>
+@endif

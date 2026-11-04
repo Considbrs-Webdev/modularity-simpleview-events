@@ -87,6 +87,18 @@ class App
                 null
             );
         }
+
+        $scriptFile = CacheBust::name('js/modularity-simpleview-events.js');
+
+        if ($scriptFile) {
+            wp_enqueue_script(
+                'modularity-simpleview-events',
+                MODULARITYSIMPLEVIEWEVENTS_URL . '/assets/dist/' . $scriptFile,
+                [],
+                null,
+                true
+            );
+        }
     }
 
     /**
