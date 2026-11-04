@@ -553,3 +553,7 @@ msgstr "Arkivet kunde inte tas bort eftersom det inte hittades."
 #: source/php/Admin/ArchiveRegistryTable.php:290
 msgid "Archive could not be removed."
 msgstr "Arkivet kunde inte tas bort."
+
+#: source/php/App.php
+msgid "No upcoming events."
+msgstr "Inga kommande evenemang."

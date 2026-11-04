@@ -42,6 +42,7 @@ class App
         add_action('init', [$this, 'registerDynamicTaxonomies'], 1);
         add_action('init', [$this, 'maybeFlushRewriteRules'], 99);
         add_filter('body_class', [$this, 'addSimpleviewBodyClass'], 10, 1);
+        add_filter('Municipio/Template/viewData', [$this, 'overrideNoResultLabel'], 10, 1);
         add_filter('Municipio/DecoratePostObject', [$this, 'decoratePostObject'], 10, 1);
 
         add_filter('Municipio/viewPaths', [$this, 'addViewPaths'], 999);
@@ -153,6 +154,24 @@ class App
         }
 
         return $classes;
+    }
+
+    /**
+     * Use an event-specific "no results" label instead of Municipio's generic one
+     * on Simpleview archives and lists.
+     *
+     * @param array $viewData Municipio template view data
+     * @return array
+     */
+    public function overrideNoResultLabel(array $viewData): array
+    {
+        if (!isset($viewData['lang']) || !is_object($viewData['lang']) || !$this->isSimpleviewEventsContext()) {
+            return $viewData;
+        }
+
+        $viewData['lang']->noResult = __('No upcoming events.', 'modularity-simpleview-events');
+
+        return $viewData;
     }
 
     /**

@@ -462,3 +462,7 @@ msgstr ""
 #, php-format
 msgid "Categories for %s events"
 msgstr ""
+
+#: source/php/App.php
+msgid "No upcoming events."
+msgstr "Inga kommande evenemang."
